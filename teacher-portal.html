@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Teacher Result Entry - Fixed</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{font-family:Segoe UI;background:#e0e0e0;padding:15px}
+.filter-card{background:white;padding:15px;border-radius:8px;display:flex;gap:12px;margin-bottom:15px;align-items:end}
+select,button{padding:8px 12px;border-radius:6px;border:1px solid #ccc}
+button{background:#2e08b6;color:white;font-weight:bold;cursor:pointer}
+.report-paper{background:white;padding:10px;border-radius:8px;overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;text-align:center}
+th,td{border:1px solid #444;padding:6px}
+.name-col{text-align:left}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0006;justify-content:center;align-items:center;z-index:999}
+.modal-content{background:white;padding:20px;border-radius:10px;width:520px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-grid input{width:100%;padding:6px}
+</style>
+</head><body>
+<div class="filter-card">
+<div><label>Exam</label><br><select id="selectExam"><option value="">--Choose--</option></select></div>
+<div><label>Class</label><br><select id="selectClass"><option value="">--Choose--</option></select></div>
+<div><button onclick="fetchReport()">Load</button></div>
+<div style="margin-left:auto;font-size:12px">Teacher Portal - edits go to cloud, school app pulls it</div>
+</div>
+<div class="report-paper">
+<table><thead><tr id="mainHeaderRow"></tr><tr id="totalMarksRow"></tr></thead><tbody id="resultBody"></tbody></table>
+</div>
+<div class="modal-overlay" id="editModal"><div class="modal-content"><h3 id="modalStudentName"></h3><div id="modalInputContainer" class="modal-grid"></div><div style="text-align:right;margin-top:15px"><button onclick="closeModal()" style="background:#666">Cancel</button> <button onclick="saveModalMarks()" style="background:#28a745">Save to Cloud</button></div></div></div>
+
+<script>
+const SUPABASE_URL='https://vxdqfngvmrrupfooywwk.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZHFmbmd2bXJydXBmb295d3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDQxNDEsImV4cCI6MjEwNTc4MDE0MX0.aXCF-sR7AiNVnTS1VGTp4tLDHTwox7PmDFrXAdrKM4Q';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SCHOOL_CODE='DEMO_SCHOOL_001';
+let currentData=[], studentsMap={}, activeIndex=null;
+
+async function loadDropdowns(){
+ const {data:exams}=await supabaseClient.from('exams').select('*').eq('school_code',SCHOOL_CODE);
+ const {data:classes}=await supabaseClient.from('classes').select('*').eq('school_code',SCHOOL_CODE);
+ exams?.forEach(e=>{ let o=document.createElement('option'); o.value=e.exam_id; o.text=e.exam_name; selectExam.appendChild(o); });
+ classes?.forEach(c=>{ let o=document.createElement('option'); o.value=c.class_name; o.text=c.class_name; selectClass.appendChild(o); });
+}
+loadDropdowns();
+
+async function fetchReport(){
+ const examId=selectExam.value, className=selectClass.value;
+ if(!examId||!className) return alert('Select exam & class');
+ // Fetch students for names
+ const {data:students}=await supabaseClient.from('students').select('*').eq('school_code',SCHOOL_CODE).eq('class_name',className);
+ studentsMap={}; students?.forEach(s=> studentsMap[s.id]=s);
+ // Fetch results
+ const {data,error}=await supabaseClient.from('results').select('*').eq('school_code',SCHOOL_CODE).eq('exam_id',examId).eq('class',className).order('result_id',{ascending:true});
+ if(error) return alert(error.message);
+ currentData=data||[]; renderTable();
+}
+
+function renderTable(){
+ const body=document.getElementById('resultBody'); body.innerHTML='';
+ if(!currentData.length){ body.innerHTML='<tr><td colspan=10>No records found for this class/exam</td></tr>'; return; }
+ const first=currentData[0];
+ const subjects=[];
+ ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(s=>{ if((first[s+'_setmarks']||0)>0) subjects.push(s); });
+ if(subjects.length==0) subjects.push('urdu','eng','math');
+
+ document.getElementById('mainHeaderRow').innerHTML=
+   `<th>Reg No</th><th class="name-col">Name</th>${subjects.map(s=>`<th style="text-transform:uppercase">${s}</th>`).join('')}<th>Obt</th><th>Total</th><th>%age</th><th>Grade</th><th>Action</th>`;
+ document.getElementById('totalMarksRow').innerHTML=
+   `<th></th><th></th>${subjects.map(s=>`<th>${first[s+'_setmarks']||0}</th>`).join('')}<th></th><th>${first.total_setmarks||0}</th><th></th><th></th><th></th>`;
+
+ currentData.forEach((row,i)=>{
+   const stu=studentsMap[row.student_id]||{};
+   let totalSet=0,obt=0; subjects.forEach(s=>{ totalSet+=parseFloat(row[s+'_setmarks'])||0; obt+=parseFloat(row[s+'_obt'])||0; });
+   const perc= totalSet? (obt/totalSet*100).toFixed(0) : 0;
+   const grade= row.grade || (perc>=80?'A':perc>=60?'B':perc>=40?'C':'F');
+   const tr=document.createElement('tr');
+   tr.innerHTML=`<td>${stu.registration_no||row.student_id}</td><td class="name-col" style="color:#00b">${stu.student_name||'Student '+row.student_id}</td>${subjects.map(s=>`<td>${row[s+'_obt']??0}</td>`).join('')}<td><b>${obt}</b></td><td>${totalSet}</td><td>${perc}%</td><td style="color:${grade=='F'?'red':'green'}"><b>${grade}</b></td><td><button onclick="openModal(${i})">Edit</button></td>`;
+   body.appendChild(tr);
+ });
+}
+
+function openModal(i){
+ activeIndex=i; const s=currentData[i]; const stu=studentsMap[s.student_id]||{};
+ document.getElementById('modalStudentName').innerText=`Edit: ${stu.student_name||'Student '+s.student_id} (${stu.registration_no||s.student_id})`;
+ const cont=document.getElementById('modalInputContainer'); cont.innerHTML='';
+ ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(sub=>{
+   if((s[sub+'_setmarks']||0)>0){
+     cont.innerHTML+=`<div><label>${sub.toUpperCase()} (Max ${s[sub+'_setmarks']})</label><input type="number" id="modal_${sub}_obt" value="${s[sub+'_obt']||0}" min="0" max="${s[sub+'_setmarks']}"></div>`;
+   }
+ });
+ document.getElementById('editModal').style.display='flex';
+}
+function closeModal(){ document.getElementById('editModal').style.display='none'; }
+
+async function saveModalMarks(){
+ const row=currentData[activeIndex]; const updates={};
+ let totalObt=0,totalSet=0;
+ ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(s=>{
+   const el=document.getElementById(`modal_${s}_obt`);
+   if(el){ const v=parseInt(el.value)||0; updates[s+'_obt']=v; totalObt+=v; totalSet+= parseInt(row[s+'_setmarks'])||0; }
+   else if((row[s+'_setmarks']||0)>0){ totalObt+= parseInt(row[s+'_obt'])||0; totalSet+= parseInt(row[s+'_setmarks'])||0; }
+ });
+ updates.total_obt=totalObt; updates.total_setmarks=totalSet;
+ updates.percentage= totalSet? (totalObt/totalSet*100):0;
+ if(updates.percentage>=80) updates.grade='A'; else if(updates.percentage>=70) updates.grade='B'; else if(updates.percentage>=60) updates.grade='C'; else if(updates.percentage>=40) updates.grade='D'; else updates.grade='F';
+ updates.result_status = updates.grade=='F'?'Fail':'Pass';
+ const {error}=await supabaseClient.from('results').update(updates).eq('result_id',row.result_id).eq('school_code',SCHOOL_CODE);
+ if(error) alert(error.message); else { alert('Saved! Obt='+totalObt+' Grade='+updates.grade); closeModal(); fetchReport(); }
+}
+</script>
+</body></html>
