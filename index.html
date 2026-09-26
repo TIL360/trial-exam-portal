@@ -92,75 +92,39 @@
 </div>
 
 <script>
-    // Context bridges exposed via Electron preload script
-    const dbEngine = window.electronDatabase || require('./database.ejs'); 
-    const { createClient } = require('@supabase/supabase-js');
+    // 1. Check if running inside Electron desktop app or a standard web browser
+    const isElectron = typeof require !== 'undefined';
+    
+    let dbEngine = null;
+    let supabase = null;
 
-    // Cloud Gateway Baseline Config
-    const supabaseUrl = 'https://supabase.co'; 
-    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    if (isElectron) {
+        // Desktop Electron mode context configuration
+        dbEngine = window.electronDatabase || require('./database.ejs'); 
+        const { createClient } = require('@supabase/supabase-js');
         
-        const mode = document.getElementById('authMode').value;
-        const userVal = document.getElementById('username').value.trim();
-        const passVal = document.getElementById('password').value;
-        const errorLog = document.getElementById('errorLog');
+        const supabaseUrl = 'https://supabase.co'; 
+        const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+        supabase = createClient(supabaseUrl, supabaseKey);
+    } else {
+        // Standard Web Browser Mode - Disable offline features safely
+        console.log("🌐 Running in standard browser environment. Local SQLite features disabled.");
         
-        errorLog.style.display = 'none';
-        errorLog.innerText = '';
-
-        // Standardized system email transformation logic
-        const cleanEmail = userVal.includes('@') ? userVal : `${userVal.toLowerCase()}@school.com`;
-
-        if (mode === 'local') {
-            // --- OFFLINE LOOKUP ---
-            try {
-                // Accepts raw username variations or full cleanEmail strings locally
-                const user = dbEngine.checkUser(userVal, passVal) || dbEngine.checkUser(cleanEmail, passVal);
-                if (user) {
-                    handleLoginSuccess(user, 'Offline Local');
-                } else {
-                    showError("Invalid offline credentials.");
-                }
-            } catch (err) {
-                showError(`Local DB Engine error: ${err.message}`);
-            }
+        // Dynamically hide the "Offline Local Database" environment dropdown choice from users
+        document.getElementById('authMode').value = 'online';
+        document.getElementById('authMode').options[0].disabled = true; // Blocks selecting offline mode
+        
+        // Access Supabase using the global window variable loaded via your HTML CDN script header
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+            const supabaseUrl = 'https://supabase.co'; 
+            const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+            supabase = supabase.createClient(supabaseUrl, supabaseKey);
         } else {
-            // --- ONLINE CLOUD LOOKUP ---
-            try {
-                const { data, error } = await supabase
-                    .from('profiles') // 👈 Queries your newly updated plain text profile table
-                    .select('*')
-                    .eq('username', cleanEmail)
-                    .eq('password', passVal) // Plain-text exact string verification matching
-                    .single();
-
-                if (error || !data) {
-                    showError("Invalid cloud credentials. Access Denied.");
-                } else {
-                    handleLoginSuccess(data, 'Cloud Production');
-                }
-            } catch (err) {
-                showError(`Network connection dropped: ${err.message}`);
-            }
+            console.error("Supabase CDN bundle missing! Ensure <script src='https://jsdelivr.net'></scr" + "ipt> is in your HTML <head>.");
         }
-    });
-
-    function handleLoginSuccess(userProfile, context) {
-        console.log(`✅ Access Granted via [${context}] Context:`, userProfile);
-        alert(`Welcome back, ${userProfile.username}! Access Mode: ${context}`);
-        // Route your application workflow entry point coordinates here:
-        // window.location.href = 'dashboard.html';
     }
 
-    function showError(message) {
-        const errorLog = document.getElementById('errorLog');
-        errorLog.innerText = message;
-        errorLog.style.display = 'block';
-    }
+    // --- Keep the rest of your login submission listener code exactly the same ---
 </script>
 
 </body>
