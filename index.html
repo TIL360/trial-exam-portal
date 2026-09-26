@@ -1,110 +1,249 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Teacher Result Entry - Fixed</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body{font-family:Segoe UI;background:#e0e0e0;padding:15px}
-.filter-card{background:white;padding:15px;border-radius:8px;display:flex;gap:12px;margin-bottom:15px;align-items:end}
-select,button{padding:8px 12px;border-radius:6px;border:1px solid #ccc}
-button{background:#2e08b6;color:white;font-weight:bold;cursor:pointer}
-.report-paper{background:white;padding:10px;border-radius:8px;overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center}
-th,td{border:1px solid #444;padding:6px}
-.name-col{text-align:left}
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0006;justify-content:center;align-items:center;z-index:999}
-.modal-content{background:white;padding:20px;border-radius:10px;width:520px}
-.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modal-grid input{width:100%;padding:6px}
-</style>
-</head><body>
-<div class="filter-card">
-<div><label>Exam</label><br><select id="selectExam"><option value="">--Choose--</option></select></div>
-<div><label>Class</label><br><select id="selectClass"><option value="">--Choose--</option></select></div>
-<div><button onclick="fetchReport()">Load</button></div>
-<div style="margin-left:auto;font-size:12px">Teacher Portal - edits go to cloud, school app pulls it</div>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Marks Entry Portal</title>
+    <style>
+        :root { --primary:#00b074; --primary-hover:#008a5b; --bg:#1c1c1c; --surface:#2e2e2e; --text:#f3f4f6; --border:#444; }
+        body{font-family:sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px}
+        .container{max-width:1000px;margin:0 auto;background:var(--surface);padding:25px;border-radius:8px}
+        h2{margin-top:0;color:var(--primary);border-bottom:2px solid var(--border);padding-bottom:10px}
+        .filter-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr)) auto;gap:15px;background:rgba(0,0,0,0.2);padding:15px;border-radius:6px;align-items:flex-end;margin-bottom:25px}
+        .form-group{display:flex;flex-direction:column;gap:5px} .form-group label{font-size:0.85rem;font-weight:600;color:#aaa}
+        .form-control{padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#111;color:white}
+        .btn{background:var(--primary);color:white;border:none;padding:9px 20px;border-radius:4px;cursor:pointer;font-weight:600;height:38px}
+        .btn:hover{background:var(--primary-hover)}
+        table{width:100%;border-collapse:collapse} th,td{padding:12px;border-bottom:1px solid var(--border)} th{background:#222;color:var(--primary)}
+        .input-score{width:80px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:bold;background:#111;color:#fff}
+        .footer-actions{margin-top:25px;display:flex;justify-content:flex-end;gap:15px;border-top:2px solid var(--border);padding-top:15px}
+        .status-msg{display:inline-block;margin-right:auto;font-weight:600} .text-success{color:#00b074} .text-error{color:#ff4d4d}
+    </style>
+    <!-- CORRECT CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h2>⚡ Cloud Marks Entry Portal (Supabase)</h2>
+    <div class="filter-card">
+        <div class="form-group"><label>Select Examination</label><select id="selectExam" class="form-control"><option value="">-- Choose Exam --</option></select></div>
+        <div class="form-group"><label>Select Class</label><select id="selectClass" class="form-control"><option value="">-- Choose Class --</option></select></div>
+        <div class="form-group"><label>Select Subject</label><select id="selectSubject" class="form-control"><option value="">-- Choose Subject --</option></select></div>
+        <button type="button" id="btnFetch" class="btn">Fetch Student List</button>
+    </div>
+    <div class="table-responsive">
+        <table id="marksTable" style="display:none;">
+            <thead>
+    <tr>
+        <th>Reg. No</th>
+        <th>Roll No</th>
+        <th>Student Name</th>
+        <th>Father's Name</th>
+        <th>Offline Marks</th> <!-- 👈 Column 1 -->
+        <th>Online Marks</th>  <!-- 👈 Column 2 -->
+    </tr>
+</thead>
+
+            <tbody id="studentListRows"></tbody></table>
+    </div>
+    <div class="footer-actions" id="actionFooter" style="display:none;"><span id="statusMessage" class="status-msg"></span><button type="button" id="btnSave" class="btn">Save to Supabase</button></div>
 </div>
-<div class="report-paper">
-<table><thead><tr id="mainHeaderRow"></tr><tr id="totalMarksRow"></tr></thead><tbody id="resultBody"></tbody></table>
-</div>
-<div class="modal-overlay" id="editModal"><div class="modal-content"><h3 id="modalStudentName"></h3><div id="modalInputContainer" class="modal-grid"></div><div style="text-align:right;margin-top:15px"><button onclick="closeModal()" style="background:#666">Cancel</button> <button onclick="saveModalMarks()" style="background:#28a745">Save to Cloud</button></div></div></div>
 
 <script>
-const SUPABASE_URL='https://vxdqfngvmrrupfooywwk.supabase.co';
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZHFmbmd2bXJydXBmb295d3drIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDQxNDEsImV4cCI6MjEwNTc4MDE0MX0.aXCF-sR7AiNVnTS1VGTp4tLDHTwox7PmDFrXAdrKM4Q';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const SCHOOL_CODE='DEMO_SCHOOL_001';
-let currentData=[], studentsMap={}, activeIndex=null;
+    const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
+    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-async function loadDropdowns(){
- const {data:exams}=await supabaseClient.from('exams').select('*').eq('school_code',SCHOOL_CODE);
- const {data:classes}=await supabaseClient.from('classes').select('*').eq('school_code',SCHOOL_CODE);
- exams?.forEach(e=>{ let o=document.createElement('option'); o.value=e.exam_id; o.text=e.exam_name; selectExam.appendChild(o); });
- classes?.forEach(c=>{ let o=document.createElement('option'); o.value=c.class_name; o.text=c.class_name; selectClass.appendChild(o); });
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCloudDropdowns();
+        document.getElementById('btnFetch').addEventListener('click', fetchCloudRows);
+        document.getElementById('btnSave').addEventListener('click', saveCloudRows);
+    });
+
+async function loadCloudDropdowns() {
+    // use 'id' not 'exam_id' - as per your table screenshot
+    const { data: exams, error: e1 } = await supabaseClient.from('exams').select('id, exam_name').eq('school_code', 'TECHINFO_2026');
+    const { data: classes, error: e2 } = await supabaseClient.from('classes').select('class_name, school_code').eq('school_code', 'TECHINFO_2026');
+    const { data: subjects, error: e3 } = await supabaseClient.from('academy_subjects').select('subject_code, subject_display_name');
+
+    console.log("exams:", exams, e1);
+    console.log("classes:", classes, e2);
+    console.log("subjects:", subjects, e3);
+
+    const examSel = document.getElementById('selectExam');
+    if (exams) exams.forEach(e => examSel.add(new Option(e.exam_name, e.id)));
+
+    const classSel = document.getElementById('selectClass');
+    if (classes) classes.forEach(c => classSel.add(new Option(c.class_name, c.class_name)));
+
+    const subSel = document.getElementById('selectSubject');
+    if (subjects) subjects.forEach(s => subSel.add(new Option(s.subject_display_name, s.subject_code)));
 }
-loadDropdowns();
+async function fetchCloudRows() {
+    const className = document.getElementById('selectClass').value;
+    const subjectCode = document.getElementById('selectSubject').value;
+    if (!className || !subjectCode) { alert('Select class and subject'); return; }
 
-async function fetchReport(){
- const examId=selectExam.value, className=selectClass.value;
- if(!examId||!className) return alert('Select exam & class');
- // Fetch students for names
- const {data:students}=await supabaseClient.from('students').select('*').eq('school_code',SCHOOL_CODE).eq('class_name',className);
- studentsMap={}; students?.forEach(s=> studentsMap[s.id]=s);
- // Fetch results
- const {data,error}=await supabaseClient.from('results').select('*').eq('school_code',SCHOOL_CODE).eq('exam_id',examId).eq('class',className).order('result_id',{ascending:true});
- if(error) return alert(error.message);
- currentData=data||[]; renderTable();
+    // 1. Fetch base templates from result table
+    const { data: baseResults, error: baseErr } = await supabaseClient
+        .from('result')
+        .select('*')
+        .eq('class', className)
+        .eq('subject_code', subjectCode);
+
+    if (baseErr) { alert(baseErr.message); return; }
+    if (!baseResults || baseResults.length === 0) {
+        document.getElementById('studentListRows').innerHTML = `<tr><td colspan="6">No data for ${className}/${subjectCode}</td></tr>`;
+        document.getElementById('marksTable').style.display = 'table';
+        return;
+    }
+
+    // 2. Fetch custom adjusted scores from student_subject_marks table
+    const { data: customSavedMarks, error: customErr } = await supabaseClient
+        .from('student_subject_marks')
+        .select('*')
+        .eq('class', className)
+        .eq('subject_code', subjectCode);
+
+    if (customErr) { console.error("Error reading from student_subject_marks:", customErr.message); }
+
+    // 3. Gather student data profiles
+    const studentIds = baseResults.map(r => r.student_id).filter(Boolean);
+    let studentsMap = {};
+    if (studentIds.length > 0) {
+        const { data: students } = await supabaseClient
+            .from('students')
+            .select('id, registration_no, roll_no, student_name, father_name')
+            .in('id', studentIds);
+        if (students) {
+            students.forEach(s => studentsMap[s.id] = s);
+        }
+    }
+
+    // 4. CONSOLIDATE ROW MAPS: Group entries by student_id to prevent duplicate rows
+    const uniqueStudentsMap = {};
+
+    baseResults.forEach(r => {
+        // Find if there is a cloud modification record matching this result_id template
+        const matchingCloud = customSavedMarks 
+            ? customSavedMarks.find(sm => sm.result_id === r.id && sm.subject_code === r.subject_code)
+            : null;
+
+        // Group by student_id to ensure only one line displays per person
+        uniqueStudentsMap[r.student_id] = {
+            result_id: r.id,
+            exam_id: r.exam_id,
+            student_id: r.student_id,
+            marks_set: r.marks_set,
+            offline_marks: r.marks_obtained || 0, // Pulls the base offline score
+            online_marks: matchingCloud ? matchingCloud.marks_obtained : null // Pulls cloud score if present
+        };
+    });
+
+    // 5. Render to UI table body elements
+    const tbody = document.getElementById('studentListRows');
+    tbody.innerHTML = '';
+    
+    Object.values(uniqueStudentsMap).forEach(row => {
+        const st = studentsMap[row.student_id] || {};
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+        <td>${st.registration_no || '-'}</td>
+        <td>${st.roll_no || '-'}</td>
+        <td><strong>${st.student_name || 'ID:'+row.student_id}</strong></td>
+        <td>${st.father_name || '-'}</td>
+        
+        <!-- COLUMN 1: Offline Scores Display -->
+        <td>
+            <span class="badge-offline" style="color: #bbb;">${row.offline_marks} / ${row.marks_set}</span>
+        </td>
+        
+        <!-- COLUMN 2: Online Scores Action Entry (Can be modified and saved) -->
+        <td>
+            <input type="number" 
+                   class="input-score" 
+                   data-id="${row.result_id}" 
+                   data-result-id="${row.result_id}" 
+                   data-exam-id="${row.exam_id || ''}"
+                   data-student-id="${row.student_id || ''}"
+                   data-class-name="${className}"
+                   data-subject-code="${subjectCode}" 
+                   min="0" 
+                   max="${row.marks_set}" 
+                   value="${row.online_marks !== null ? row.online_marks : row.offline_marks}">
+            <span> / ${row.marks_set}</span>
+        </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('marksTable').style.display = 'table';
+    document.getElementById('actionFooter').style.display = 'flex';
 }
 
-function renderTable(){
- const body=document.getElementById('resultBody'); body.innerHTML='';
- if(!currentData.length){ body.innerHTML='<tr><td colspan=10>No records found for this class/exam</td></tr>'; return; }
- const first=currentData[0];
- const subjects=[];
- ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(s=>{ if((first[s+'_setmarks']||0)>0) subjects.push(s); });
- if(subjects.length==0) subjects.push('urdu','eng','math');
+async function saveCloudRows() {
+    const inputs = document.querySelectorAll('.input-score');
+    const msg = document.getElementById('statusMessage');
+    msg.innerText = '⏳ Syncing...';
+    msg.className = 'status-msg';
 
- document.getElementById('mainHeaderRow').innerHTML=
-   `<th>Reg No</th><th class="name-col">Name</th>${subjects.map(s=>`<th style="text-transform:uppercase">${s}</th>`).join('')}<th>Obt</th><th>Total</th><th>%age</th><th>Grade</th><th>Action</th>`;
- document.getElementById('totalMarksRow').innerHTML=
-   `<th></th><th></th>${subjects.map(s=>`<th>${first[s+'_setmarks']||0}</th>`).join('')}<th></th><th>${first.total_setmarks||0}</th><th></th><th></th><th></th>`;
+    let hasError = false;
+    let errorMessage = '';
 
- currentData.forEach((row,i)=>{
-   const stu=studentsMap[row.student_id]||{};
-   let totalSet=0,obt=0; subjects.forEach(s=>{ totalSet+=parseFloat(row[s+'_setmarks'])||0; obt+=parseFloat(row[s+'_obt'])||0; });
-   const perc= totalSet? (obt/totalSet*100).toFixed(0) : 0;
-   const grade= row.grade || (perc>=80?'A':perc>=60?'B':perc>=40?'C':'F');
-   const tr=document.createElement('tr');
-   tr.innerHTML=`<td>${stu.registration_no||row.student_id}</td><td class="name-col" style="color:#00b">${stu.student_name||'Student '+row.student_id}</td>${subjects.map(s=>`<td>${row[s+'_obt']??0}</td>`).join('')}<td><b>${obt}</b></td><td>${totalSet}</td><td>${perc}%</td><td style="color:${grade=='F'?'red':'green'}"><b>${grade}</b></td><td><button onclick="openModal(${i})">Edit</button></td>`;
-   body.appendChild(tr);
- });
+    // 1. Prepare payload for student_subject_marks table with all structural fields
+    const updatePayload = Array.from(inputs).map(input => ({
+        result_id: parseInt(input.dataset.resultId),
+        subject_code: input.dataset.subjectCode,
+        exam_id: input.dataset.examId ? parseInt(input.dataset.examId) : null,
+        student_id: input.dataset.studentId ? parseInt(input.dataset.studentId) : null,
+        class: input.dataset.className || null,
+        marks_obtained: parseFloat(input.value) || 0
+    }));
+
+    try {
+        // 2. Save to student_subject_marks table
+        const { error: upsertError } = await supabaseClient
+            .from('student_subject_marks')
+            .upsert(updatePayload, { onConflict: 'result_id,subject_code' });
+
+        if (upsertError) {
+            hasError = true;
+            errorMessage = 'student_subject_marks error: ' + upsertError.message;
+        }
+
+        // 3. Simultaneously loop and update the main result table
+        for (const input of inputs) {
+            const id = input.getAttribute('data-id');
+            const marks = parseFloat(input.value) || 0;
+            
+            const { error: updateError } = await supabaseClient
+                .from('result')
+                .update({ marks_obtained: marks })
+                .eq('id', id);
+
+            if (updateError) {
+                console.error('Error updating result row ID ' + id + ':', updateError);
+                hasError = true;
+                errorMessage = 'result table error: ' + updateError.message;
+            }
+        }
+
+        // 4. Update the UI feedback message based on the status
+        if (hasError) {
+            msg.className = 'status-msg text-error';
+            msg.innerText = '❌ ' + errorMessage;
+        } else {
+            msg.className = 'status-msg text-success';
+            msg.innerText = '✅ Saved & Synced ' + inputs.length + ' records successfully!';
+        }
+
+    } catch (err) {
+        msg.className = 'status-msg text-error';
+        msg.innerText = '❌ System Exception: ' + err.message;
+    }
 }
 
-function openModal(i){
- activeIndex=i; const s=currentData[i]; const stu=studentsMap[s.student_id]||{};
- document.getElementById('modalStudentName').innerText=`Edit: ${stu.student_name||'Student '+s.student_id} (${stu.registration_no||s.student_id})`;
- const cont=document.getElementById('modalInputContainer'); cont.innerHTML='';
- ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(sub=>{
-   if((s[sub+'_setmarks']||0)>0){
-     cont.innerHTML+=`<div><label>${sub.toUpperCase()} (Max ${s[sub+'_setmarks']})</label><input type="number" id="modal_${sub}_obt" value="${s[sub+'_obt']||0}" min="0" max="${s[sub+'_setmarks']}"></div>`;
-   }
- });
- document.getElementById('editModal').style.display='flex';
-}
-function closeModal(){ document.getElementById('editModal').style.display='none'; }
-
-async function saveModalMarks(){
- const row=currentData[activeIndex]; const updates={};
- let totalObt=0,totalSet=0;
- ['urdu','eng','math','science','islamiat','computer','physics','chemistry','biology','sst'].forEach(s=>{
-   const el=document.getElementById(`modal_${s}_obt`);
-   if(el){ const v=parseInt(el.value)||0; updates[s+'_obt']=v; totalObt+=v; totalSet+= parseInt(row[s+'_setmarks'])||0; }
-   else if((row[s+'_setmarks']||0)>0){ totalObt+= parseInt(row[s+'_obt'])||0; totalSet+= parseInt(row[s+'_setmarks'])||0; }
- });
- updates.total_obt=totalObt; updates.total_setmarks=totalSet;
- updates.percentage= totalSet? (totalObt/totalSet*100):0;
- if(updates.percentage>=80) updates.grade='A'; else if(updates.percentage>=70) updates.grade='B'; else if(updates.percentage>=60) updates.grade='C'; else if(updates.percentage>=40) updates.grade='D'; else updates.grade='F';
- updates.result_status = updates.grade=='F'?'Fail':'Pass';
- const {error}=await supabaseClient.from('results').update(updates).eq('result_id',row.result_id).eq('school_code',SCHOOL_CODE);
- if(error) alert(error.message); else { alert('Saved! Obt='+totalObt+' Grade='+updates.grade); closeModal(); fetchReport(); }
-}
 </script>
-</body></html>
+</body>
+</html>
