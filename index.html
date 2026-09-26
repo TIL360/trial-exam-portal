@@ -1,46 +1,167 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cloud Marks Portal</title>
-<style>:root{--bg:#0f172a;--card:#1e293b;--orange:#ea580c;--light:#f8fafc;--muted:#94a3b8;--border:#334155}
-body{font-family:Segoe UI;background:var(--bg);color:var(--light);display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
-.login-box{background:var(--card);padding:40px;border-radius:12px;width:100%;max-width:420px;border:1px solid var(--border)}
-h2{color:var(--orange);text-align:center;margin:0 0 8px}.subtitle{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:30px}
-label{display:block;margin-bottom:8px;color:var(--muted);font-size:.85rem;font-weight:600}
-input{width:100%;padding:12px;background:#0f172a;border:1px solid var(--border);border-radius:6px;color:var(--light);box-sizing:border-box}
-.btn{background:var(--orange);color:#fff;border:none;padding:14px;width:100%;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:15px}
-.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:10px;border-radius:6px;font-size:.85rem;text-align:center;margin-top:20px;display:none;white-space:pre-wrap}
-</style></head><body>
-<div class="login-box"><h2>CLOUD MARKS PORTAL</h2><div class="subtitle">Live verification infrastructure gate</div>
-<form id="cloudLoginForm">
-<label>Email</label><input id="usernameInput" required value="uzma@school.com">
-<label style="margin-top:20px">Password</label><input type="password" id="passwordInput" required>
-<button class="btn" type="submit">VERIFY IDENTITY</button><div class="error" id="errorWrapper"></div>
-</form></div>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management - Secure Login</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --background: #f3f4f6;
+            --surface: #ffffff;
+            --text: #1f2937;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-card {
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 { margin-bottom: 1.5rem; font-size: 1.75rem; text-align: center; }
+        .form-group { margin-bottom: 1.25rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input:focus, select:focus {
+            outline: 2px solid var(--primary);
+            border-color: transparent;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .btn:hover { background: #4338ca; }
+        .error-message {
+            color: #dc2626;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
 
-<!-- FIXED CDN - not blocked by Edge -->
-<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
+<div class="login-card">
+    <h2>Portal Login</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="authMode">Connection Environment</label>
+            <select id="authMode">
+                <option value="local">Offline Local Database</option>
+                <option value="online">Online Supabase Cloud</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="username">Username / Email</label>
+            <input type="text" id="username" placeholder="Enter your username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn">Log In</button>
+        <div id="errorLog" class="error-message"></div>
+    </form>
+</div>
+
 <script>
-const supabaseUrl = 'https://vxdgfngvmrupfoqywwk.supabase.co';
-const supabaseKey = 'PASTE_YOUR_FULL_eyJ_KEY_HERE_200+_CHARS';
+    // Context bridges exposed via Electron preload script
+    const dbEngine = window.electronDatabase || require('./database.ejs'); 
+    const { createClient } = require('@supabase/supabase-js');
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storage: { getItem:()=>null, setItem:()=>{}, removeItem:()=>{} } }
-});
+    // Cloud Gateway Baseline Config
+    const supabaseUrl = 'https://supabase.co'; 
+    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-document.getElementById('cloudLoginForm').onsubmit = async (e) => {
- e.preventDefault();
- const errDiv = document.getElementById('errorWrapper');
- errDiv.style.display='none';
- let email = document.getElementById('usernameInput').value.trim().toLowerCase();
- if (!email.includes('@')) email = email + '@school.com';
- console.log('Trying login with:', email);
- try {
-   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: document.getElementById('passwordInput').value });
-   if (error) throw error;
-   sessionStorage.setItem('cloud_user_id', data.user.id);
-   window.location.href = './Marks-Portal.html';
- } catch (err) {
-   errDiv.textContent = err.message;
-   errDiv.style.display='block';
- }
-};
-</script></body></html>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const mode = document.getElementById('authMode').value;
+        const userVal = document.getElementById('username').value.trim();
+        const passVal = document.getElementById('password').value;
+        const errorLog = document.getElementById('errorLog');
+        
+        errorLog.style.display = 'none';
+        errorLog.innerText = '';
+
+        // Standardized system email transformation logic
+        const cleanEmail = userVal.includes('@') ? userVal : `${userVal.toLowerCase()}@school.com`;
+
+        if (mode === 'local') {
+            // --- OFFLINE LOOKUP ---
+            try {
+                // Accepts raw username variations or full cleanEmail strings locally
+                const user = dbEngine.checkUser(userVal, passVal) || dbEngine.checkUser(cleanEmail, passVal);
+                if (user) {
+                    handleLoginSuccess(user, 'Offline Local');
+                } else {
+                    showError("Invalid offline credentials.");
+                }
+            } catch (err) {
+                showError(`Local DB Engine error: ${err.message}`);
+            }
+        } else {
+            // --- ONLINE CLOUD LOOKUP ---
+            try {
+                const { data, error } = await supabase
+                    .from('profiles') // 👈 Queries your newly updated plain text profile table
+                    .select('*')
+                    .eq('username', cleanEmail)
+                    .eq('password', passVal) // Plain-text exact string verification matching
+                    .single();
+
+                if (error || !data) {
+                    showError("Invalid cloud credentials. Access Denied.");
+                } else {
+                    handleLoginSuccess(data, 'Cloud Production');
+                }
+            } catch (err) {
+                showError(`Network connection dropped: ${err.message}`);
+            }
+        }
+    });
+
+    function handleLoginSuccess(userProfile, context) {
+        console.log(`✅ Access Granted via [${context}] Context:`, userProfile);
+        alert(`Welcome back, ${userProfile.username}! Access Mode: ${context}`);
+        // Route your application workflow entry point coordinates here:
+        // window.location.href = 'dashboard.html';
+    }
+
+    function showError(message) {
+        const errorLog = document.getElementById('errorLog');
+        errorLog.innerText = message;
+        errorLog.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
