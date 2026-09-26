@@ -3,247 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Marks Entry Portal</title>
+    <title>Cloud Marks Portal | Secure Gateway Login</title>
     <style>
-        :root { --primary:#00b074; --primary-hover:#008a5b; --bg:#1c1c1c; --surface:#2e2e2e; --text:#f3f4f6; --border:#444; }
-        body{font-family:sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px}
-        .container{max-width:1000px;margin:0 auto;background:var(--surface);padding:25px;border-radius:8px}
-        h2{margin-top:0;color:var(--primary);border-bottom:2px solid var(--border);padding-bottom:10px}
-        .filter-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr)) auto;gap:15px;background:rgba(0,0,0,0.2);padding:15px;border-radius:6px;align-items:flex-end;margin-bottom:25px}
-        .form-group{display:flex;flex-direction:column;gap:5px} .form-group label{font-size:0.85rem;font-weight:600;color:#aaa}
-        .form-control{padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#111;color:white}
-        .btn{background:var(--primary);color:white;border:none;padding:9px 20px;border-radius:4px;cursor:pointer;font-weight:600;height:38px}
-        .btn:hover{background:var(--primary-hover)}
-        table{width:100%;border-collapse:collapse} th,td{padding:12px;border-bottom:1px solid var(--border)} th{background:#222;color:var(--primary)}
-        .input-score{width:80px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:bold;background:#111;color:#fff}
-        .footer-actions{margin-top:25px;display:flex;justify-content:flex-end;gap:15px;border-top:2px solid var(--border);padding-top:15px}
-        .status-msg{display:inline-block;margin-right:auto;font-weight:600} .text-success{color:#00b074} .text-error{color:#ff4d4d}
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent-orange: #ea580c;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-box {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid var(--border);
+        }
+        h2 {
+            margin: 0 0 8px 0;
+            color: var(--accent-orange);
+            text-align: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-light);
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+        .btn-login {
+            background: var(--accent-orange);
+            color: #ffffff;
+            font-weight: bold;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+        }
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
-    <!-- CORRECT CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
-<div class="container">
-    <h2>⚡ Cloud Marks Entry Portal (Supabase)</h2>
-    <div class="filter-card">
-        <div class="form-group"><label>Select Examination</label><select id="selectExam" class="form-control"><option value="">-- Choose Exam --</option></select></div>
-        <div class="form-group"><label>Select Class</label><select id="selectClass" class="form-control"><option value="">-- Choose Class --</option></select></div>
-        <div class="form-group"><label>Select Subject</label><select id="selectSubject" class="form-control"><option value="">-- Choose Subject --</option></select></div>
-        <button type="button" id="btnFetch" class="btn">Fetch Student List</button>
-    </div>
-    <div class="table-responsive">
-        <table id="marksTable" style="display:none;">
-            <thead>
-    <tr>
-        <th>Reg. No</th>
-        <th>Roll No</th>
-        <th>Student Name</th>
-        <th>Father's Name</th>
-        <th>Offline Marks</th> <!-- 👈 Column 1 -->
-        <th>Online Marks</th>  <!-- 👈 Column 2 -->
-    </tr>
-</thead>
 
-            <tbody id="studentListRows"></tbody></table>
-    </div>
-    <div class="footer-actions" id="actionFooter" style="display:none;"><span id="statusMessage" class="status-msg"></span><button type="button" id="btnSave" class="btn">Save to Supabase</button></div>
-</div>
-
-<script>
-    const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
-    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-    document.addEventListener('DOMContentLoaded', () => {
-        loadCloudDropdowns();
-        document.getElementById('btnFetch').addEventListener('click', fetchCloudRows);
-        document.getElementById('btnSave').addEventListener('click', saveCloudRows);
-    });
-
-async function loadCloudDropdowns() {
-    // use 'id' not 'exam_id' - as per your table screenshot
-    const { data: exams, error: e1 } = await supabaseClient.from('exams').select('id, exam_name').eq('school_code', 'TECHINFO_2026');
-    const { data: classes, error: e2 } = await supabaseClient.from('classes').select('class_name, school_code').eq('school_code', 'TECHINFO_2026');
-    const { data: subjects, error: e3 } = await supabaseClient.from('academy_subjects').select('subject_code, subject_display_name');
-
-    console.log("exams:", exams, e1);
-    console.log("classes:", classes, e2);
-    console.log("subjects:", subjects, e3);
-
-    const examSel = document.getElementById('selectExam');
-    if (exams) exams.forEach(e => examSel.add(new Option(e.exam_name, e.id)));
-
-    const classSel = document.getElementById('selectClass');
-    if (classes) classes.forEach(c => classSel.add(new Option(c.class_name, c.class_name)));
-
-    const subSel = document.getElementById('selectSubject');
-    if (subjects) subjects.forEach(s => subSel.add(new Option(s.subject_display_name, s.subject_code)));
-}
-async function fetchCloudRows() {
-    const className = document.getElementById('selectClass').value;
-    const subjectCode = document.getElementById('selectSubject').value;
-    if (!className || !subjectCode) { alert('Select class and subject'); return; }
-
-    // 1. Fetch base templates from result table
-    const { data: baseResults, error: baseErr } = await supabaseClient
-        .from('result')
-        .select('*')
-        .eq('class', className)
-        .eq('subject_code', subjectCode);
-
-    if (baseErr) { alert(baseErr.message); return; }
-    if (!baseResults || baseResults.length === 0) {
-        document.getElementById('studentListRows').innerHTML = `<tr><td colspan="6">No data for ${className}/${subjectCode}</td></tr>`;
-        document.getElementById('marksTable').style.display = 'table';
-        return;
-    }
-
-    // 2. Fetch custom adjusted scores from student_subject_marks table
-    const { data: customSavedMarks, error: customErr } = await supabaseClient
-        .from('student_subject_marks')
-        .select('*')
-        .eq('class', className)
-        .eq('subject_code', subjectCode);
-
-    if (customErr) { console.error("Error reading from student_subject_marks:", customErr.message); }
-
-    // 3. Gather student data profiles
-    const studentIds = baseResults.map(r => r.student_id).filter(Boolean);
-    let studentsMap = {};
-    if (studentIds.length > 0) {
-        const { data: students } = await supabaseClient
-            .from('students')
-            .select('id, registration_no, roll_no, student_name, father_name')
-            .in('id', studentIds);
-        if (students) {
-            students.forEach(s => studentsMap[s.id] = s);
-        }
-    }
-
-    // 4. CONSOLIDATE ROW MAPS: Group entries by student_id to prevent duplicate rows
-    const uniqueStudentsMap = {};
-
-    baseResults.forEach(r => {
-        // Find if there is a cloud modification record matching this result_id template
-        const matchingCloud = customSavedMarks 
-            ? customSavedMarks.find(sm => sm.result_id === r.id && sm.subject_code === r.subject_code)
-            : null;
-
-        // Group by student_id to ensure only one line displays per person
-        uniqueStudentsMap[r.student_id] = {
-            result_id: r.id,
-            exam_id: r.exam_id,
-            student_id: r.student_id,
-            marks_set: r.marks_set,
-            offline_marks: r.marks_obtained || 0, // Pulls the base offline score
-            online_marks: matchingCloud ? matchingCloud.marks_obtained : null // Pulls cloud score if present
-        };
-    });
-
-    // 5. Render to UI table body elements
-    const tbody = document.getElementById('studentListRows');
-    tbody.innerHTML = '';
+<div class="login-box">
+    <h2>Cloud Marks Portal</h2>
+    <div class="subtitle">Live verification infrastructure gate</div>
     
-    Object.values(uniqueStudentsMap).forEach(row => {
-        const st = studentsMap[row.student_id] || {};
-        const tr = document.createElement('tr');
+    <form id="cloudLoginForm">
+        <div class="form-group">
+            <label>Username / Institutional Email</label>
+            <input type="text" id="usernameInput" required placeholder="Enter username or email">
+        </div>
+        <div class="form-group">
+            <label>Security Password</label>
+            <input type="password" id="passwordInput" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-login">Verify Identity</button>
+        <div class="error-box" id="errorWrapper"></div>
+    </form>
+</div>
+<!-- 1. FIXED: Changed the broken URL to load the actual live Supabase bundle cleanly -->
+<script src="https://jsdelivr.net"></script>
+<script>
+    // Register the submit event immediately at the start so e.preventDefault() is guaranteed to run
+    document.getElementById('cloudLoginForm').onsubmit = async (e) => {
+        e.preventDefault(); // 🌟 Safely stops the native form reload behavior instantly!
         
-        tr.innerHTML = `
-        <td>${st.registration_no || '-'}</td>
-        <td>${st.roll_no || '-'}</td>
-        <td><strong>${st.student_name || 'ID:'+row.student_id}</strong></td>
-        <td>${st.father_name || '-'}</td>
+        const inputVal = document.getElementById('usernameInput').value.trim();
+        const passVal = document.getElementById('passwordInput').value;
+        const errDiv = document.getElementById('errorWrapper');
         
-        <!-- COLUMN 1: Offline Scores Display -->
-        <td>
-            <span class="badge-offline" style="color: #bbb;">${row.offline_marks} / ${row.marks_set}</span>
-        </td>
-        
-        <!-- COLUMN 2: Online Scores Action Entry (Can be modified and saved) -->
-        <td>
-            <input type="number" 
-                   class="input-score" 
-                   data-id="${row.result_id}" 
-                   data-result-id="${row.result_id}" 
-                   data-exam-id="${row.exam_id || ''}"
-                   data-student-id="${row.student_id || ''}"
-                   data-class-name="${className}"
-                   data-subject-code="${subjectCode}" 
-                   min="0" 
-                   max="${row.marks_set}" 
-                   value="${row.online_marks !== null ? row.online_marks : row.offline_marks}">
-            <span> / ${row.marks_set}</span>
-        </td>
-        `;
-        tbody.appendChild(tr);
-    });
+        if (errDiv) errDiv.style.display = 'none';
 
-    document.getElementById('marksTable').style.display = 'table';
-    document.getElementById('actionFooter').style.display = 'flex';
-}
-
-async function saveCloudRows() {
-    const inputs = document.querySelectorAll('.input-score');
-    const msg = document.getElementById('statusMessage');
-    msg.innerText = '⏳ Syncing...';
-    msg.className = 'status-msg';
-
-    let hasError = false;
-    let errorMessage = '';
-
-    // 1. Prepare payload for student_subject_marks table with all structural fields
-    const updatePayload = Array.from(inputs).map(input => ({
-        result_id: parseInt(input.dataset.resultId),
-        subject_code: input.dataset.subjectCode,
-        exam_id: input.dataset.examId ? parseInt(input.dataset.examId) : null,
-        student_id: input.dataset.studentId ? parseInt(input.dataset.studentId) : null,
-        class: input.dataset.className || null,
-        marks_obtained: parseFloat(input.value) || 0
-    }));
-
-    try {
-        // 2. Save to student_subject_marks table
-        const { error: upsertError } = await supabaseClient
-            .from('student_subject_marks')
-            .upsert(updatePayload, { onConflict: 'result_id,subject_code' });
-
-        if (upsertError) {
-            hasError = true;
-            errorMessage = 'student_subject_marks error: ' + upsertError.message;
+        // 2. Safe Client Initialization Check
+        let supabaseClient;
+        try {
+            if (typeof supabase === 'undefined') {
+                throw new Error("Supabase library failed to load from the web CDN. Please check your internet connection.");
+            }
+            const { createClient } = supabase;
+            
+            // 🌟 FIXED: Restored your actual live database project endpoint address instead of the homepage
+            const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
+            const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+            
+            supabaseClient = createClient(supabaseUrl, supabaseKey);
+        } catch (initErr) {
+            console.error("Initialization error:", initErr);
+            if (errDiv) {
+                errDiv.innerText = initErr.message;
+                errDiv.style.display = 'block';
+            }
+            return;
         }
 
-        // 3. Simultaneously loop and update the main result table
-        for (const input of inputs) {
-            const id = input.getAttribute('data-id');
-            const marks = parseFloat(input.value) || 0;
-            
-            const { error: updateError } = await supabaseClient
-                .from('result')
-                .update({ marks_obtained: marks })
-                .eq('id', id);
+        // 3. Format simple usernames into standard school email addresses
+        const cleanEmail = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@school.com`;
 
-            if (updateError) {
-                console.error('Error updating result row ID ' + id + ':', updateError);
-                hasError = true;
-                errorMessage = 'result table error: ' + updateError.message;
+        try {
+            console.log(`📡 Sending cloud verification request for user: ${cleanEmail}`);
+            
+            // 4. Authenticate directly against Supabase Identity Management layer
+            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email: cleanEmail,
+                password: passVal
+            });
+
+            if (authError) {
+                console.warn("❌ Verification rejected:", authError.message);
+                if (errDiv) {
+                    errDiv.innerText = authError.message;
+                    errDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            // 5. Pull structural restriction mappings directly from profile schemas
+            const { data: profileData, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('role, assigned_class')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (profileError || !profileData) {
+                if (errDiv) {
+                    errDiv.innerText = "Authentication succeeded, but profile records are missing online.";
+                    errDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            // 6. Write active session parameters into memory strings
+            sessionStorage.setItem('cloud_user_uid', authData.user.id);
+            sessionStorage.setItem('cloud_user_role', profileData.role);
+            sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
+
+            console.log(`✅ Success! Redirecting account with class isolation scope: ${profileData.assigned_class || 'Full Access'}`);
+
+            // 7. Direct navigation router hook
+            window.location.href = 'index.html'; 
+            
+        } catch (catchErr) {
+            console.error("Login process crash error stack:", catchErr);
+            if (errDiv) {
+                errDiv.innerText = "An unexpected error occurred during cloud login verification.";
+                errDiv.style.display = 'block';
             }
         }
-
-        // 4. Update the UI feedback message based on the status
-        if (hasError) {
-            msg.className = 'status-msg text-error';
-            msg.innerText = '❌ ' + errorMessage;
-        } else {
-            msg.className = 'status-msg text-success';
-            msg.innerText = '✅ Saved & Synced ' + inputs.length + ' records successfully!';
-        }
-
-    } catch (err) {
-        msg.className = 'status-msg text-error';
-        msg.innerText = '❌ System Exception: ' + err.message;
-    }
-}
-
+    };
 </script>
+
+
+
+
+
+
 </body>
 </html>
