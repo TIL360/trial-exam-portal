@@ -116,12 +116,11 @@
         <div class="error-box" id="errorWrapper"></div>
     </form>
 </div>
-<!-- 1. FIXED: Changed the broken URL to load the actual live Supabase bundle cleanly -->
+<!-- Load Supabase Core SDK Browser Bundle Client -->
 <script src="https://jsdelivr.net"></script>
 <script>
-    // Register the submit event immediately at the start so e.preventDefault() is guaranteed to run
     document.getElementById('cloudLoginForm').onsubmit = async (e) => {
-        e.preventDefault(); // 🌟 Safely stops the native form reload behavior instantly!
+        e.preventDefault(); // Stops native form submission reloads instantly!
         
         const inputVal = document.getElementById('usernameInput').value.trim();
         const passVal = document.getElementById('passwordInput').value;
@@ -129,7 +128,6 @@
         
         if (errDiv) errDiv.style.display = 'none';
 
-        // 2. Safe Client Initialization Check
         let supabaseClient;
         try {
             if (typeof supabase === 'undefined') {
@@ -137,8 +135,7 @@
             }
             const { createClient } = supabase;
             
-            // 🌟 FIXED: Restored your actual live database project endpoint address instead of the homepage
-            const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
+            const supabaseUrl = 'https://supabase.co'; 
             const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
             
             supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -151,13 +148,11 @@
             return;
         }
 
-        // 3. Format simple usernames into standard school email addresses
         const cleanEmail = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@school.com`;
 
         try {
             console.log(`📡 Sending cloud verification request for user: ${cleanEmail}`);
             
-            // 4. Authenticate directly against Supabase Identity Management layer
             const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
                 email: cleanEmail,
                 password: passVal
@@ -172,7 +167,6 @@
                 return;
             }
 
-            // 5. Pull structural restriction mappings directly from profile schemas
             const { data: profileData, error: profileError } = await supabaseClient
                 .from('profiles')
                 .select('role, assigned_class')
@@ -187,15 +181,15 @@
                 return;
             }
 
-            // 6. Write active session parameters into memory strings
+            // Save active user constraints to browser storage strings
             sessionStorage.setItem('cloud_user_uid', authData.user.id);
             sessionStorage.setItem('cloud_user_role', profileData.role);
             sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
 
-            console.log(`✅ Success! Redirecting account with class isolation scope: ${profileData.assigned_class || 'Full Access'}`);
+            console.log(`✅ Success! Redirecting account to Marks-Portal.html`);
 
-            // 7. Direct navigation router hook
-            window.location.href = 'index.html'; 
+            // 🌟 FIXED: Redirects directly to your marks portal instead of reloading the login screen
+            window.location.href = 'Marks-Portal.html'; 
             
         } catch (catchErr) {
             console.error("Login process crash error stack:", catchErr);
@@ -206,6 +200,7 @@
         }
     };
 </script>
+
 
 
 
