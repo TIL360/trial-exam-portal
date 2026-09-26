@@ -1,157 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Management - Portal Login</title>
-    <!-- 1. Load the official Supabase library bundle for web browsers -->
-    <script src="https://jsdelivr.net"></script>
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --background: #f3f4f6;
-            --surface: #ffffff;
-            --text: #1f2937;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--background);
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-card {
-            background: var(--surface);
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            width: 100%;
-            max-width: 400px;
-        }
-        h2 { margin-bottom: 1.5rem; font-size: 1.75rem; text-align: center; }
-        .form-group { margin-bottom: 1.25rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; }
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1rem;
-        }
-        input:focus {
-            outline: 2px solid var(--primary);
-            border-color: transparent;
-        }
-        .btn {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 0.5rem;
-        }
-        .btn:hover { background: #4338ca; }
-        .error-message {
-            color: #dc2626;
-            font-size: 0.875rem;
-            margin-top: 1rem;
-            text-align: center;
-            display: none;
-        }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cloud Marks Portal</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--orange:#ea580c;--light:#f8fafc;--muted:#94a3b8;--border:#334155}
+body{font-family:'Segoe UI',system-ui;background:var(--bg);color:var(--light);display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+.login-box{background:var(--card);padding:40px;border-radius:12px;width:100%;max-width:420px;border:1px solid var(--border);box-shadow:0 10px 25px rgba(0,0,0,.3)}
+h2{color:var(--orange);text-align:center;margin:0 0 8px;font-weight:800;text-transform:uppercase}
+.subtitle{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:30px}
+label{display:block;margin-bottom:8px;color:var(--muted);font-size:.85rem;font-weight:600}
+input{width:100%;padding:12px;background:#0f172a;border:1px solid var(--border);border-radius:6px;color:var(--light);box-sizing:border-box;font-size:.95rem}
+input:focus{outline:none;border-color:var(--orange)}
+.btn{background:var(--orange);color:#fff;border:none;padding:14px;width:100%;border-radius:6px;cursor:pointer;font-weight:bold;margin-top:15px;text-transform:uppercase}
+.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:10px;border-radius:6px;font-size:.85rem;text-align:center;margin-top:20px;display:none;white-space:pre-wrap}
+.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#4ade80;padding:10px;border-radius:6px;font-size:.85rem;text-align:center;margin-top:20px;display:none}
+</style>
 </head>
 <body>
-
-<div class="login-card">
-    <h2>Portal Login</h2>
-    <form id="loginForm">
-        <div class="form-group">
-            <label for="username">Username / Email</label>
-            <input type="text" id="username" placeholder="Enter your username or email" required>
-        </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="••••••••" required>
-        </div>
-        <button type="submit" class="btn">Log In</button>
-        <div id="errorLog" class="error-message"></div>
-    </form>
+<div class="login-box">
+<h2>Cloud Marks Portal</h2>
+<div class="subtitle">Enter your username to verify</div>
+<form id="cloudLoginForm">
+<label>Username (e.g. Uzma)</label>
+<input id="usernameInput" required placeholder="Uzma or Fozia" autocomplete="username">
+<label style="margin-top:20px">Security Password</label>
+<input type="password" id="passwordInput" required placeholder="••••••••" autocomplete="current-password">
+<button class="btn" id="loginBtn" type="submit">Verify Identity</button>
+<div class="error" id="errorWrapper"></div>
+<div class="success" id="successWrapper"></div>
+</form>
 </div>
 
+<!-- FINAL CDN - Edge Tracking Prevention safe -->
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 <script>
-    // 2. Initialize Supabase client directly using the global browser object
-    const supabaseUrl = 'https://supabase.co'; 
-    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-    
-    // Connect using window.supabase bundle loaded via CDN
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
+const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const userVal = document.getElementById('username').value.trim();
-        const passVal = document.getElementById('password').value;
-        const errorLog = document.getElementById('errorLog');
-        
-        errorLog.style.display = 'none';
-        errorLog.innerText = '';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
 
-        // Standard text fallback string parser (e.g., "Uzma" becomes "uzma@school.com")
-        const cleanEmail = userVal.includes('@') ? userVal : `${userVal.toLowerCase()}@school.com`;
+document.getElementById('cloudLoginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const errDiv = document.getElementById('errorWrapper');
+  const sucDiv = document.getElementById('successWrapper');
+  const btn = document.getElementById('loginBtn');
+  errDiv.style.display='none'; sucDiv.style.display='none';
+  btn.textContent='Verifying...'; btn.disabled=true;
 
-        try {
-            // 3. Query your custom 'profiles' table directly in the public schema
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('username', cleanEmail)
-                .eq('password', passVal) // Direct plain-text matching comparison
-                .maybeSingle(); // Gracefully handles 0 records found without throwing an exception
+  let rawInput = document.getElementById('usernameInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  let lowerInput = rawInput.toLowerCase();
 
-            if (error) {
-                showError(`Database connectivity error: ${error.message}`);
-                return;
-            }
+  try {
+    // STEP A: profiles table se email nikalo username se
+    console.log('Finding email for username:', lowerInput);
+    let emailToUse = null;
 
-            if (!data) {
-                showError("Invalid username or password. Access Denied.");
-                return;
-            }
+    // Agar user ne email hi likh diya to direct use karo
+    if (lowerInput.includes('@')) {
+      emailToUse = lowerInput;
+    } else {
+      // username se email dhoondo
+      const { data: profileRow, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('email, full_name, assigned_class, role, username')
+        .or(`username.eq.${lowerInput},full_name.ilike.${lowerInput}`)
+        .single();
 
-            // Authentication clear: Proceed to dashboard app logic
-            handleLoginSuccess(data);
+      console.log('Profile found:', profileRow, 'Error:', profileError);
 
-        } catch (err) {
-            showError(`Network connection dropped: ${err.message}`);
-        }
+      if (profileError || !profileRow) {
+        throw new Error(`Username "${rawInput}" profile table mein nahi mila. Pehle SQL Step 1 run karo.`);
+      }
+      if (!profileRow.email) {
+        throw new Error(`Profile mila lekin email nahi hai. SQL se email update karo.`);
+      }
+      emailToUse = profileRow.email;
+      
+      // Session mein save karo
+      sessionStorage.setItem('cloud_user_name', profileRow.full_name);
+      sessionStorage.setItem('cloud_user_class_scope', profileRow.assigned_class || '');
+      sessionStorage.setItem('cloud_user_role', profileRow.role || 'teacher');
+    }
+
+    console.log('Final email for auth:', emailToUse);
+
+    // STEP B: Auth se password verify karo (Secure)
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+      email: emailToUse,
+      password: password
     });
 
-    function handleLoginSuccess(userProfile) {
-        console.log(`✅ Access Granted:`, userProfile);
-        alert(`Welcome back, ${userProfile.username}! Login Successful.`);
-        
-        // Save profile properties to browser session storage if you need them later
-        sessionStorage.setItem('userRole', userProfile.usertype);
-        sessionStorage.setItem('userScope', userProfile.assigned_class);
-        
-        // Uncomment this line to redirect to your main landing layout path:
-        // window.location.href = 'dashboard.html';
-    }
+    if (authError) throw authError;
 
-    function showError(message) {
-        const errorLog = document.getElementById('errorLog');
-        errorLog.innerText = message;
-        errorLog.style.display = 'block';
+    console.log('Auth OK:', authData.user.id);
+    sucDiv.textContent = `Welcome ${rawInput}! Redirecting...`;
+    sucDiv.style.display='block';
+    sessionStorage.setItem('cloud_user_id', authData.user.id);
+    sessionStorage.setItem('cloud_user_email', emailToUse);
+
+    // Redirect
+    setTimeout(() => { window.location.href = './Marks-Portal.html'; }, 500);
+
+  } catch (err) {
+    console.error(err);
+    let msg = err.message;
+    if (msg.includes('Failed to fetch') || msg.includes('fetch')) {
+      msg += '\n\nReasons:\n1. Anon key adhi hai (... nahi chalega full paste karo)\n2. PTCL Supabase block - Mobile data / WARP VPN ON karo\n3. Project URL ghalat hai';
     }
+    if (msg.includes('Invalid login credentials')) {
+      msg = `Password ghalat hai ${rawInput} ke liye.\nAuth Users mein password reset karo.`;
+    }
+    errDiv.textContent = msg;
+    errDiv.style.display='block';
+    btn.textContent='Verify Identity'; btn.disabled=false;
+  }
+};
 </script>
-
 </body>
 </html>
