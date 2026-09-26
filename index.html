@@ -117,91 +117,65 @@
     </form>
 </div>
 
+<!-- 1. Load the real, complete Supabase client distribution file -->
 <script src="https://jsdelivr.net"></script>
+
 <script>
- document.getElementById('cloudLoginForm').onsubmit = async (e) => {
-    e.preventDefault(); // Stops native form submission reloads instantly!
+// Initialize the connection instantly
+const supabaseUrl = 'https://supabase.co';
+const supabaseKey = 'sb_publishable_dvgg0mxQl7wmhpIrkzbrLw_9Zp-Dm57';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+document.getElementById('cloudLoginForm').onsubmit = async (e) => {
+    e.preventDefault();
     
-    // FIXED: Added missing "=" assignment operators below
     const inputVal = document.getElementById('usernameInput').value.trim();
     const passVal = document.getElementById('passwordInput').value;
     const errDiv = document.getElementById('errorWrapper');
     
     if (errDiv) errDiv.style.display = 'none';
 
+    // Auto-complete email suffix if the user just inputs their name
+    const cleanEmail = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@school.com`;
 
-        let supabaseClient;
-        try {
-            if (typeof supabase === 'undefined') {
-                throw new Error("Supabase library failed to load from the web CDN. Please check your internet connection.");
-            }
-            const { createClient } = supabase;
-            
-            // 2. FIXED: Pointed request routes back to your active project engine address
-            const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
-            const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-            
-            supabaseClient = createClient(supabaseUrl, supabaseKey);
-        } catch (initErr) {
-            console.error("Initialization error:", initErr);
-            if (errDiv) {
-                errDiv.innerText = initErr.message;
-                errDiv.style.display = 'block';
-            }
-            return;
+    try {
+        // Step 1: Validate instantly against Supabase secure Auth engine
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: cleanEmail,
+            password: passVal
+        });
+
+        if (authError) {
+            throw new Error(authError.message);
         }
 
-        const cleanEmail = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@school.com`;
+        // Step 2: Grab the matching user constraints from your public profile rows
+        const { data: profileData, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('role, assigned_class')
+            .eq('id', authData.user.id)
+            .single();
 
-        try {
-            console.log(`📡 Sending cloud verification request for user: ${cleanEmail}`);
-            
-            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: cleanEmail,
-                password: passVal
-            });
-
-            if (authError) {
-                console.warn("❌ Verification rejected:", authError.message);
-                if (errDiv) {
-                    errDiv.innerText = authError.message;
-                    errDiv.style.display = 'block';
-                }
-                return;
-            }
-
-            const { data: profileData, error: profileError } = await supabaseClient
-                .from('profiles')
-                .select('role, assigned_class')
-                .eq('id', authData.user.id)
-                .single();
-
-            if (profileError || !profileData) {
-                if (errDiv) {
-                    errDiv.innerText = "Authentication succeeded, but profile records are missing online.";
-                    errDiv.style.display = 'block';
-                }
-                return;
-            }
-
-            // Save active user constraints to browser storage strings
-            sessionStorage.setItem('cloud_user_uid', authData.user.id);
-            sessionStorage.setItem('cloud_user_role', profileData.role);
-            sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
-
-            console.log(`✅ Success! Redirecting account to Marks-Portal.html`);
-
-            // 3. FIXED: Routes to your marks portal filename directly
-            window.location.href = 'marks-portal.html';
-            
-        } catch (catchErr) {
-            console.error("Login process crash error stack:", catchErr);
-            if (errDiv) {
-                errDiv.innerText = "An unexpected error occurred during cloud login verification.";
-                errDiv.style.display = 'block';
-            }
+        if (profileError || !profileData) {
+            throw new Error("Authentication ok, but profile mapping details are missing.");
         }
-    };
+
+        // Step 3: Cache variables instantly into local browser session strings
+        sessionStorage.setItem('cloud_user_role', profileData.role);
+        sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
+
+        console.log("✔ Profile active! Transferring to grading desk...");
+        window.location.href = 'Marks-Portal.html';
+
+    } catch (err) {
+        console.error("Login verification failed:", err.message);
+        if (errDiv) {
+            errDiv.innerText = err.message;
+            errDiv.style.display = 'block';
+        }
+    }
+};
 </script>
+
 </body>
 </html>
