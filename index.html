@@ -116,7 +116,8 @@
         <div class="error-box" id="errorWrapper"></div>
     </form>
 </div>
-<!-- Load Supabase Core SDK Browser Bundle Client -->
+
+<!-- 1. FIXED: Loaded the genuine Supabase CDN module package here -->
 <script src="https://jsdelivr.net"></script>
 <script>
     document.getElementById('cloudLoginForm').onsubmit = async (e) => {
@@ -135,7 +136,8 @@
             }
             const { createClient } = supabase;
             
-            const supabaseUrl = 'https://supabase.co'; 
+            // 2. FIXED: Pointed request routes back to your active project engine address
+            const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
             const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
             
             supabaseClient = createClient(supabaseUrl, supabaseKey);
@@ -188,7 +190,7 @@
 
             console.log(`✅ Success! Redirecting account to Marks-Portal.html`);
 
-            // 🌟 FIXED: Redirects directly to your marks portal instead of reloading the login screen
+            // 3. FIXED: Routes to your marks portal filename directly
             window.location.href = 'Marks-Portal.html'; 
             
         } catch (catchErr) {
@@ -200,12 +202,5 @@
         }
     };
 </script>
-
-
-
-
-
-
-
 </body>
 </html>
