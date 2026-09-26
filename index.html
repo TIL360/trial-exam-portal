@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cloud Marks Portal</title>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cloud Marks Portal</title>
 <style>:root{--bg:#0f172a;--card:#1e293b;--orange:#ea580c;--light:#f8fafc;--muted:#94a3b8;--border:#334155}
 body{font-family:Segoe UI;background:var(--bg);color:var(--light);display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
 .login-box{background:var(--card);padding:40px;border-radius:12px;width:100%;max-width:420px;border:1px solid var(--border)}
@@ -12,54 +11,36 @@ input{width:100%;padding:12px;background:#0f172a;border:1px solid var(--border);
 </style></head><body>
 <div class="login-box"><h2>CLOUD MARKS PORTAL</h2><div class="subtitle">Live verification infrastructure gate</div>
 <form id="cloudLoginForm">
-<label>Username / Institutional Email</label><input id="usernameInput" required placeholder="fozia@school.com">
-<label style="margin-top:20px">Security Password</label><input type="password" id="passwordInput" required>
-<button class="btn" id="loginBtn" type="submit">VERIFY IDENTITY</button><div class="error" id="errorWrapper"></div>
+<label>Email</label><input id="usernameInput" required value="uzma@school.com">
+<label style="margin-top:20px">Password</label><input type="password" id="passwordInput" required>
+<button class="btn" type="submit">VERIFY IDENTITY</button><div class="error" id="errorWrapper"></div>
 </form></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
+<!-- FIXED CDN - not blocked by Edge -->
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 <script>
-// PASTE YOUR REAL VALUES - MUST BE FULL
 const supabaseUrl = 'https://vxdgfngvmrupfoqywwk.supabase.co';
-const supabaseKey = 'PASTE_FULL_ANON_KEY_HERE_STARTING_WITH_eyJ..._ABOUT_200_CHARS';
+const supabaseKey = 'PASTE_YOUR_FULL_eyJ_KEY_HERE_200+_CHARS';
 
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storage: { getItem:()=>null, setItem:()=>{}, removeItem:()=>{} } }
 });
 
 document.getElementById('cloudLoginForm').onsubmit = async (e) => {
  e.preventDefault();
  const errDiv = document.getElementById('errorWrapper');
- const btn = document.getElementById('loginBtn');
- errDiv.style.display='none'; btn.textContent='Verifying...'; btn.disabled=true;
-
+ errDiv.style.display='none';
  let email = document.getElementById('usernameInput').value.trim().toLowerCase();
- const password = document.getElementById('passwordInput').value;
  if (!email.includes('@')) email = email + '@school.com';
-
  console.log('Trying login with:', email);
  try {
-   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: document.getElementById('passwordInput').value });
    if (error) throw error;
-   console.log('Auth OK', data.user.id);
-   sessionStorage.setItem('cloud_user_email', email);
    sessionStorage.setItem('cloud_user_id', data.user.id);
-   
-   try {
-     const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', data.user.id).single();
-     if (prof) {
-       sessionStorage.setItem('cloud_user_role', prof.role);
-       sessionStorage.setItem('cloud_user_class_scope', prof.assigned_class);
-     }
-   } catch(e){ console.warn('profile skip', e.message); }
-
    window.location.href = './Marks-Portal.html';
  } catch (err) {
-   console.error(err);
    errDiv.textContent = err.message;
-   if (err.message.includes('fetch')) errDiv.textContent += '\nCheck: 1) Internet 2) Anon key is full 3) Project URL correct\nTry mobile data or 1.1.1.1 VPN - PTCL blocks Supabase sometimes';
    errDiv.style.display='block';
-   btn.textContent='VERIFY IDENTITY'; btn.disabled=false;
  }
 };
 </script></body></html>
