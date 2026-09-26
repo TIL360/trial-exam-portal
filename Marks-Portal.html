@@ -50,16 +50,20 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+   document.addEventListener('DOMContentLoaded', () => {
     // 1. Fetch live cloud credential session constraints from browser memory strings
     const activeCloudRole = sessionStorage.getItem('cloud_user_role');
     const assignedClassScope = sessionStorage.getItem('cloud_user_class_scope');
 
     // 2. Security Gate check: If no active token strings are found, bounce back to login window
     if (!activeCloudRole) {
-        window.location.href = 'login.html';
+        console.warn('❌ Access Denied: No active session found. Redirecting to login.');
+        window.location.href = 'index.html'; // Points back to your actual login page
         return;
     }
+    
+    console.log('✅ Access Granted. Role:', activeCloudRole, 'Class Scope:', assignedClassScope);
+
 
     // 3. If account type is a standard restricted User (Teacher), lock down drop-downs
     if (activeCloudRole === 'User' && assignedClassScope !== "") {

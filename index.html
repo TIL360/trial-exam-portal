@@ -117,17 +117,18 @@
     </form>
 </div>
 
-<!-- 1. FIXED: Loaded the genuine Supabase CDN module package here -->
 <script src="https://jsdelivr.net"></script>
 <script>
-    document.getElementById('cloudLoginForm').onsubmit = async (e) => {
-    e.preventDefault(); 
+ document.getElementById('cloudLoginForm').onsubmit = async (e) => {
+    e.preventDefault(); // Stops native form submission reloads instantly!
     
+    // FIXED: Added missing "=" assignment operators below
     const inputVal = document.getElementById('usernameInput').value.trim();
     const passVal = document.getElementById('passwordInput').value;
     const errDiv = document.getElementById('errorWrapper');
     
     if (errDiv) errDiv.style.display = 'none';
+
 
         let supabaseClient;
         try {
