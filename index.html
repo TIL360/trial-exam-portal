@@ -121,13 +121,13 @@
 <script src="https://jsdelivr.net"></script>
 <script>
     document.getElementById('cloudLoginForm').onsubmit = async (e) => {
-        e.preventDefault(); // Stops native form submission reloads instantly!
-        
-        const inputVal = document.getElementById('usernameInput').value.trim();
-        const passVal = document.getElementById('passwordInput').value;
-        const errDiv = document.getElementById('errorWrapper');
-        
-        if (errDiv) errDiv.style.display = 'none';
+    e.preventDefault(); 
+    
+    const inputVal = document.getElementById('usernameInput').value.trim();
+    const passVal = document.getElementById('passwordInput').value;
+    const errDiv = document.getElementById('errorWrapper');
+    
+    if (errDiv) errDiv.style.display = 'none';
 
         let supabaseClient;
         try {
@@ -191,7 +191,7 @@
             console.log(`✅ Success! Redirecting account to Marks-Portal.html`);
 
             // 3. FIXED: Routes to your marks portal filename directly
-            window.location.href = 'Marks-Portal.html'; 
+            window.location.href = 'marks-portal.html';
             
         } catch (catchErr) {
             console.error("Login process crash error stack:", catchErr);
