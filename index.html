@@ -20,43 +20,31 @@ input{width:100%;padding:12px;background:#0f172a;border:1px solid var(--border);
 <div class="error" id="errorWrapper"></div>
 </form></div>
 
+<!-- PTCL block se bachne ke liye unpkg CDN -->
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 <script>
 const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
 const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false }
-});
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
 document.getElementById('cloudLoginForm').onsubmit = async (e) => {
   e.preventDefault();
   const errDiv = document.getElementById('errorWrapper');
   const btn = document.getElementById('loginBtn');
   errDiv.style.display='none'; btn.textContent='Checking...'; btn.disabled=true;
-
   const username = document.getElementById('usernameInput').value.trim().toLowerCase();
   const password = document.getElementById('passwordInput').value.trim();
-
   try {
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password)
-      .single();
-
+    if(typeof supabase === 'undefined') throw new Error('Supabase CDN block hai - Mobile Data / VPN ON karo');
+    const { data, error } = await supabaseClient.from('profiles').select('*').eq('username', username).eq('password', password).single();
     if (error || !data) throw new Error('Username ya Password ghalat hai');
-
     sessionStorage.setItem('cloud_user', data.username);
     sessionStorage.setItem('cloud_user_role', data.usertype);
     sessionStorage.setItem('cloud_user_class_scope', data.assigned_class || '');
-    
     window.location.href = './Marks-Portal.html';
   } catch (err) {
-    errDiv.textContent = err.message;
-    if(err.message.includes('fetch')) errDiv.textContent = 'Failed to fetch - Full anon key paste karo aur mobile data pe try karo';
-    errDiv.style.display='block';
+    errDiv.textContent = err.message; errDiv.style.display='block';
     btn.textContent='LOGIN'; btn.disabled=false;
   }
 };
