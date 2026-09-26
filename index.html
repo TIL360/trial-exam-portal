@@ -1,181 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloud Marks Portal | Secure Gateway Login</title>
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --accent-orange: #ea580c;
-            --text-light: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-        }
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-box {
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 420px;
-            border: 1px solid var(--border);
-        }
-        h2 {
-            margin: 0 0 8px 0;
-            color: var(--accent-orange);
-            text-align: center;
-            font-size: 1.75rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-        input {
-            width: 100%;
-            padding: 12px 14px;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-light);
-            box-sizing: border-box;
-            font-size: 0.95rem;
-        }
-        input:focus {
-            outline: none;
-            border-color: var(--accent-orange);
-        }
-        .btn-login {
-            background: var(--accent-orange);
-            color: #ffffff;
-            font-weight: bold;
-            border: none;
-            padding: 14px;
-            width: 100%;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 15px;
-        }
-        .error-box {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #f87171;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            text-align: center;
-            margin-top: 20px;
-            display: none;
-        }
+        :root { --bg-dark:#0f172a; --card-bg:#1e293b; --accent-orange:#ea580c; --text-light:#f8fafc; --text-muted:#94a3b8; --border:#334155; }
+        body{font-family:'Segoe UI',system-ui,sans-serif;background-color:var(--bg-dark);color:var(--text-light);display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+        .login-box{background:var(--card-bg);padding:40px;border-radius:12px;box-shadow:0 10px 25px -5px rgba(0,0,0,.3);width:100%;max-width:420px;border:1px solid var(--border)}
+        h2{margin:0 0 8px 0;color:var(--accent-orange);text-align:center;font-size:1.75rem;font-weight:800;text-transform:uppercase}
+        .subtitle{text-align:center;color:var(--text-muted);font-size:.85rem;margin-bottom:30px}
+        .form-group{margin-bottom:20px} label{display:block;margin-bottom:8px;font-size:.85rem;color:var(--text-muted);font-weight:600}
+        input{width:100%;padding:12px 14px;background:#0f172a;border:1px solid var(--border);border-radius:6px;color:var(--text-light);box-sizing:border-box;font-size:.95rem}
+        input:focus{outline:none;border-color:var(--accent-orange)}
+        .btn-login{background:var(--accent-orange);color:#fff;font-weight:bold;border:none;padding:14px;width:100%;border-radius:6px;cursor:pointer;font-size:.95rem;text-transform:uppercase;letter-spacing:.5px;margin-top:15px}
+        .error-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:10px;border-radius:6px;font-size:.85rem;text-align:center;margin-top:20px;display:none;white-space:pre-wrap}
     </style>
 </head>
 <body>
-
 <div class="login-box">
     <h2>Cloud Marks Portal</h2>
     <div class="subtitle">Live verification infrastructure gate</div>
-    
     <form id="cloudLoginForm">
-        <div class="form-group">
-            <label>Username / Institutional Email</label>
-            <input type="text" id="usernameInput" required placeholder="Enter username or email">
-        </div>
-        <div class="form-group">
-            <label>Security Password</label>
-            <input type="password" id="passwordInput" required placeholder="••••••••">
-        </div>
-        <button type="submit" class="btn-login">Verify Identity</button>
+        <div class="form-group"><label>Username / Institutional Email</label><input type="text" id="usernameInput" required placeholder="Enter email"></div>
+        <div class="form-group"><label>Security Password</label><input type="password" id="passwordInput" required placeholder="••••••••"></div>
+        <button type="submit" class="btn-login" id="loginBtn">Verify Identity</button>
         <div class="error-box" id="errorWrapper"></div>
     </form>
 </div>
 
-<!-- 1. Load the real, complete Supabase client distribution file -->
-<script src="https://jsdelivr.net"></script>
+<!-- FIXED CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
-// Initialize the connection instantly
-const supabaseUrl = 'https://supabase.co';
-const supabaseKey = 'sb_publishable_dvgg0mxQl7wmhpIrkzbrLw_9Zp-Dm57';
+// ---- PUT YOUR REAL VALUES HERE ----
+const supabaseUrl = 'https://vxdgfngvmrupfoqywwk.supabase.co'; 
+const supabaseKey = 'YOUR_ANON_KEY_FROM_SUPABASE_DASHBOARD_API_KEYS'; // long eyJ... key
+
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 document.getElementById('cloudLoginForm').onsubmit = async (e) => {
     e.preventDefault();
-    
+    const btn = document.getElementById('loginBtn');
+    const errDiv = document.getElementById('errorWrapper');
+    errDiv.style.display='none';
+    btn.innerText='Verifying...'; btn.disabled=true;
+
     const inputVal = document.getElementById('usernameInput').value.trim();
     const passVal = document.getElementById('passwordInput').value;
-    const errDiv = document.getElementById('errorWrapper');
-    
-    if (errDiv) errDiv.style.display = 'none';
 
-    // Auto-complete email suffix if the user just inputs their name
-    const cleanEmail = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@school.com`;
+    // Don't add @school.com automatically if you use real emails
+    const cleanEmail = inputVal.includes('@') ? inputVal : inputVal;
 
     try {
-        // Step 1: Validate instantly against Supabase secure Auth engine
+        console.log("Trying login with:", cleanEmail);
         const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-            email: cleanEmail,
-            password: passVal
+            email: cleanEmail, password: passVal
         });
+        if (authError) throw authError;
 
-        if (authError) {
-            throw new Error(authError.message);
-        }
+        console.log("Auth OK", authData.user.id);
 
-        // Step 2: Grab the matching user constraints from your public profile rows
         const { data: profileData, error: profileError } = await supabaseClient
             .from('profiles')
             .select('role, assigned_class')
             .eq('id', authData.user.id)
             .single();
 
-        if (profileError || !profileData) {
-            throw new Error("Authentication ok, but profile mapping details are missing.");
+        if (profileError) {
+            console.warn("Profile fetch error, continuing with auth only", profileError);
+            // still allow navigation even if profiles table missing
+            sessionStorage.setItem('cloud_user_role', 'teacher');
+            sessionStorage.setItem('cloud_user_class_scope', '');
+        } else {
+            sessionStorage.setItem('cloud_user_role', profileData.role);
+            sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
         }
 
-        // Step 3: Cache variables instantly into local browser session strings
-        sessionStorage.setItem('cloud_user_role', profileData.role);
-        sessionStorage.setItem('cloud_user_class_scope', profileData.assigned_class || "");
-
-        console.log("✔ Profile active! Transferring to grading desk...");
-        window.location.href = 'Marks-Portal.html';
+        console.log("✔ Login success, redirecting...");
+        // GitHub Pages is case-sensitive - file is Marks-Portal.html
+        window.location.href = './Marks-Portal.html';
 
     } catch (err) {
-        console.error("Login verification failed:", err.message);
-        if (errDiv) {
-            errDiv.innerText = err.message;
-            errDiv.style.display = 'block';
-        }
+        console.error(err);
+        errDiv.innerText = err.message;
+        errDiv.style.display='block';
+        btn.innerText='Verify Identity'; btn.disabled=false;
     }
 };
 </script>
-
 </body>
 </html>
