@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Management - Secure Login</title>
+    <title>School Management - Portal Login</title>
+    <!-- 1. Load the official Supabase library bundle for web browsers -->
+    <script src="https://jsdelivr.net"></script>
     <style>
         :root {
             --primary: #4f46e5;
@@ -32,7 +34,7 @@
         h2 { margin-bottom: 1.5rem; font-size: 1.75rem; text-align: center; }
         .form-group { margin-bottom: 1.25rem; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.875rem; }
-        input, select {
+        input {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
@@ -40,7 +42,7 @@
             box-sizing: border-box;
             font-size: 1rem;
         }
-        input:focus, select:focus {
+        input:focus {
             outline: 2px solid var(--primary);
             border-color: transparent;
         }
@@ -72,15 +74,8 @@
     <h2>Portal Login</h2>
     <form id="loginForm">
         <div class="form-group">
-            <label for="authMode">Connection Environment</label>
-            <select id="authMode">
-                <option value="local">Offline Local Database</option>
-                <option value="online">Online Supabase Cloud</option>
-            </select>
-        </div>
-        <div class="form-group">
             <label for="username">Username / Email</label>
-            <input type="text" id="username" placeholder="Enter your username" required>
+            <input type="text" id="username" placeholder="Enter your username or email" required>
         </div>
         <div class="form-group">
             <label for="password">Password</label>
@@ -92,39 +87,70 @@
 </div>
 
 <script>
-    // 1. Check if running inside Electron desktop app or a standard web browser
-    const isElectron = typeof require !== 'undefined';
+    // 2. Initialize Supabase client directly using the global browser object
+    const supabaseUrl = 'https://supabase.co'; 
+    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
     
-    let dbEngine = null;
-    let supabase = null;
+    // Connect using window.supabase bundle loaded via CDN
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    if (isElectron) {
-        // Desktop Electron mode context configuration
-        dbEngine = window.electronDatabase || require('./database.ejs'); 
-        const { createClient } = require('@supabase/supabase-js');
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        const supabaseUrl = 'https://supabase.co'; 
-        const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-        supabase = createClient(supabaseUrl, supabaseKey);
-    } else {
-        // Standard Web Browser Mode - Disable offline features safely
-        console.log("🌐 Running in standard browser environment. Local SQLite features disabled.");
+        const userVal = document.getElementById('username').value.trim();
+        const passVal = document.getElementById('password').value;
+        const errorLog = document.getElementById('errorLog');
         
-        // Dynamically hide the "Offline Local Database" environment dropdown choice from users
-        document.getElementById('authMode').value = 'online';
-        document.getElementById('authMode').options[0].disabled = true; // Blocks selecting offline mode
-        
-        // Access Supabase using the global window variable loaded via your HTML CDN script header
-        if (typeof supabase !== 'undefined' && supabase.createClient) {
-            const supabaseUrl = 'https://supabase.co'; 
-            const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
-            supabase = supabase.createClient(supabaseUrl, supabaseKey);
-        } else {
-            console.error("Supabase CDN bundle missing! Ensure <script src='https://jsdelivr.net'></scr" + "ipt> is in your HTML <head>.");
+        errorLog.style.display = 'none';
+        errorLog.innerText = '';
+
+        // Standard text fallback string parser (e.g., "Uzma" becomes "uzma@school.com")
+        const cleanEmail = userVal.includes('@') ? userVal : `${userVal.toLowerCase()}@school.com`;
+
+        try {
+            // 3. Query your custom 'profiles' table directly in the public schema
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('username', cleanEmail)
+                .eq('password', passVal) // Direct plain-text matching comparison
+                .maybeSingle(); // Gracefully handles 0 records found without throwing an exception
+
+            if (error) {
+                showError(`Database connectivity error: ${error.message}`);
+                return;
+            }
+
+            if (!data) {
+                showError("Invalid username or password. Access Denied.");
+                return;
+            }
+
+            // Authentication clear: Proceed to dashboard app logic
+            handleLoginSuccess(data);
+
+        } catch (err) {
+            showError(`Network connection dropped: ${err.message}`);
         }
+    });
+
+    function handleLoginSuccess(userProfile) {
+        console.log(`✅ Access Granted:`, userProfile);
+        alert(`Welcome back, ${userProfile.username}! Login Successful.`);
+        
+        // Save profile properties to browser session storage if you need them later
+        sessionStorage.setItem('userRole', userProfile.usertype);
+        sessionStorage.setItem('userScope', userProfile.assigned_class);
+        
+        // Uncomment this line to redirect to your main landing layout path:
+        // window.location.href = 'dashboard.html';
     }
 
-    // --- Keep the rest of your login submission listener code exactly the same ---
+    function showError(message) {
+        const errorLog = document.getElementById('errorLog');
+        errorLog.innerText = message;
+        errorLog.style.display = 'block';
+    }
 </script>
 
 </body>
