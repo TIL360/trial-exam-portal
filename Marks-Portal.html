@@ -7,19 +7,20 @@
     <style>
         :root { --primary:#00b074; --primary-hover:#008a5b; --bg:#1c1c1c; --surface:#2e2e2e; --text:#f3f4f6; --border:#444; }
         body{font-family:sans-serif;background:var(--bg);color:var(--text);margin:0;padding:20px}
-        .container{max-width:1000px;margin:0 auto;background:var(--surface);padding:25px;border-radius:8px}
+        .container{max-width:1100px;margin:0 auto;background:var(--surface);padding:25px;border-radius:8px}
         h2{margin-top:0;color:var(--primary);border-bottom:2px solid var(--border);padding-bottom:10px}
         .filter-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr)) auto;gap:15px;background:rgba(0,0,0,0.2);padding:15px;border-radius:6px;align-items:flex-end;margin-bottom:25px}
         .form-group{display:flex;flex-direction:column;gap:5px} .form-group label{font-size:0.85rem;font-weight:600;color:#aaa}
         .form-control{padding:8px 12px;border:1px solid var(--border);border-radius:4px;background:#111;color:white}
         .btn{background:var(--primary);color:white;border:none;padding:9px 20px;border-radius:4px;cursor:pointer;font-weight:600;height:38px}
         .btn:hover{background:var(--primary-hover)}
-        table{width:100%;border-collapse:collapse} th,td{padding:12px;border-bottom:1px solid var(--border)} th{background:#222;color:var(--primary)}
+        table{width:100%;border-collapse:collapse} th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left} th{background:#222;color:var(--primary)}
         .input-score{width:80px;padding:6px;border:1px solid var(--border);border-radius:4px;text-align:center;font-weight:bold;background:#111;color:#fff}
         .footer-actions{margin-top:25px;display:flex;justify-content:flex-end;gap:15px;border-top:2px solid var(--border);padding-top:15px}
         .status-msg{display:inline-block;margin-right:auto;font-weight:600} .text-success{color:#00b074} .text-error{color:#ff4d4d}
+        .offline-text{color:#aaa}
     </style>
-    <!-- CORRECT CDN -->
+    <!-- CORRECT CDN - WORKING -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
@@ -34,54 +35,22 @@
     <div class="table-responsive">
         <table id="marksTable" style="display:none;">
             <thead>
-    <tr>
-        <th>Reg. No</th>
-        <th>Roll No</th>
-        <th>Student Name</th>
-        <th>Father's Name</th>
-        <th>Offline Marks</th> <!-- 👈 Column 1 -->
-        <th>Online Marks</th>  <!-- 👈 Column 2 -->
-    </tr>
-</thead>
-
-            <tbody id="studentListRows"></tbody></table>
+                <tr>
+                    <th>Reg. No</th>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    <th>Father's Name</th>
+                    <th>Offline Marks</th>
+                    <th>Online Marks</th>
+                </tr>
+            </thead>
+            <tbody id="studentListRows"></tbody>
+        </table>
     </div>
     <div class="footer-actions" id="actionFooter" style="display:none;"><span id="statusMessage" class="status-msg"></span><button type="button" id="btnSave" class="btn">Save to Supabase</button></div>
 </div>
 
 <script>
-   document.addEventListener('DOMContentLoaded', () => {
-    // 1. Fetch live cloud credential session constraints from browser memory strings
-    const activeCloudRole = sessionStorage.getItem('cloud_user_role');
-    const assignedClassScope = sessionStorage.getItem('cloud_user_class_scope');
-
-    // 2. Security Gate check: If no active token strings are found, bounce back to login window
-    if (!activeCloudRole) {
-        console.warn('❌ Access Denied: No active session found. Redirecting to login.');
-        window.location.href = 'index.html'; // Points back to your actual login page
-        return;
-    }
-    
-    console.log('✅ Access Granted. Role:', activeCloudRole, 'Class Scope:', assignedClassScope);
-
-
-    // 3. If account type is a standard restricted User (Teacher), lock down drop-downs
-    if (activeCloudRole === 'User' && assignedClassScope !== "") {
-        console.log(`🔒 Active Security Boundary: View locked to [${assignedClassScope}] class metrics.`);
-        
-        // Target your existing select drop-down dropdown menu box element
-        const classSelectDropdown = document.getElementById('classSelect') || document.querySelector('select[placeholder*="Class"]');
-        
-        if (classSelectDropdown) {
-            classSelectDropdown.value = assignedClassScope; // Pre-select their dedicated class level choice
-            classSelectDropdown.disabled = true;           // Disable interactive inputs to freeze the field completely!
-            
-            // Trigger your webpage's native table drawing function automatically if you want rows to load on startup
-            // example: fetchStudentList();
-        }
-    }
-});
-
     const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
     const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -92,190 +61,179 @@
         document.getElementById('btnSave').addEventListener('click', saveCloudRows);
     });
 
-async function loadCloudDropdowns() {
-    // use 'id' not 'exam_id' - as per your table screenshot
-    const { data: exams, error: e1 } = await supabaseClient.from('exams').select('id, exam_name').eq('school_code', 'TECHINFO_2026');
-    const { data: classes, error: e2 } = await supabaseClient.from('classes').select('class_name, school_code').eq('school_code', 'TECHINFO_2026');
-    const { data: subjects, error: e3 } = await supabaseClient.from('academy_subjects').select('subject_code, subject_display_name');
-
-    console.log("exams:", exams, e1);
-    console.log("classes:", classes, e2);
-    console.log("subjects:", subjects, e3);
-
-    const examSel = document.getElementById('selectExam');
-    if (exams) exams.forEach(e => examSel.add(new Option(e.exam_name, e.id)));
-
-    const classSel = document.getElementById('selectClass');
-    if (classes) classes.forEach(c => classSel.add(new Option(c.class_name, c.class_name)));
-
-    const subSel = document.getElementById('selectSubject');
-    if (subjects) subjects.forEach(s => subSel.add(new Option(s.subject_display_name, s.subject_code)));
-}
-async function fetchCloudRows() {
-    const className = document.getElementById('selectClass').value;
-    const subjectCode = document.getElementById('selectSubject').value;
-    if (!className || !subjectCode) { alert('Select class and subject'); return; }
-
-    // 1. Fetch base templates from result table
-    const { data: baseResults, error: baseErr } = await supabaseClient
-        .from('result')
-        .select('*')
-        .eq('class', className)
-        .eq('subject_code', subjectCode);
-
-    if (baseErr) { alert(baseErr.message); return; }
-    if (!baseResults || baseResults.length === 0) {
-        document.getElementById('studentListRows').innerHTML = `<tr><td colspan="6">No data for ${className}/${subjectCode}</td></tr>`;
-        document.getElementById('marksTable').style.display = 'table';
-        return;
+    async function loadCloudDropdowns() {
+        try {
+            const { data: exams, error: e1 } = await supabaseClient.from('exams').select('id, exam_name').eq('school_code', 'TECHINFO_2026');
+            const { data: classes, error: e2 } = await supabaseClient.from('classes').select('class_name, school_code').eq('school_code', 'TECHINFO_2026');
+            const { data: subjects, error: e3 } = await supabaseClient.from('academy_subjects').select('subject_code, subject_display_name');
+            
+            const examSel = document.getElementById('selectExam') || document.getElementById('selectExamination');
+            if (exams && examSel) exams.forEach(e => examSel.add(new Option(e.exam_name, e.id)));
+            
+            const classSel = document.getElementById('selectClass');
+            if (classes && classSel) classes.forEach(c => classSel.add(new Option(c.class_name, c.class_name)));
+            
+            const subSel = document.getElementById('selectSubject');
+            if (subjects && subSel) subjects.forEach(s => subSel.add(new Option(s.subject_display_name, s.subject_code)));
+        } catch (err) {
+            console.error("Dropdown loading failed:", err);
+        }
     }
 
-    // 2. Fetch custom adjusted scores from student_subject_marks table
-    const { data: customSavedMarks, error: customErr } = await supabaseClient
-        .from('student_subject_marks')
-        .select('*')
-        .eq('class', className)
-        .eq('subject_code', subjectCode);
+    async function fetchCloudRows() {
+        const examSel = document.getElementById('selectExam') || document.getElementById('selectExamination');
+        const examId = parseInt(examSel.value);
+        const className = document.getElementById('selectClass').value;
+        const subjectCode = document.getElementById('selectSubject').value;
+        
+        if (!examId || !className || !subjectCode) { 
+            alert('Select examination, class and subject'); 
+            return; 
+        }
 
-    if (customErr) { console.error("Error reading from student_subject_marks:", customErr.message); }
-
-    // 3. Gather student data profiles
-    const studentIds = baseResults.map(r => r.student_id).filter(Boolean);
-    let studentsMap = {};
-    if (studentIds.length > 0) {
-        const { data: students } = await supabaseClient
+        // 1. Fetch the master list of students for this class profile context
+        const { data: baseStudents, error: sErr } = await supabaseClient
             .from('students')
             .select('id, registration_no, roll_no, student_name, father_name')
-            .in('id', studentIds);
-        if (students) {
-            students.forEach(s => studentsMap[s.id] = s);
+            .eq('school_code', 'TECHINFO_2026'); // Fetches active school records
+
+        if (sErr) { alert(sErr.message); return; }
+
+        if (!baseStudents || baseStudents.length === 0) {
+            document.getElementById('studentListRows').innerHTML = `<tr><td colspan="6">No student profiles found for this school context.</td></tr>`;
+            document.getElementById('marksTable').style.display = 'table';
+            return;
+        }
+
+        // 2. Parallel pull of evaluation records matching target metrics context
+        const { data: offlineResults, error: rErr } = await supabaseClient
+            .from('result')
+            .select('*')
+            .eq('exam_id', examId)
+            .eq('class', className)
+            .eq('subject_code', subjectCode);
+
+        const { data: onlineResults, error: smErr } = await supabaseClient
+            .from('student_subject_marks')
+            .select('*')
+            .eq('exam_id', examId)
+            .eq('class', className)
+            .eq('subject_code', subjectCode);
+
+        if (rErr || smErr) { 
+            console.error("Evaluation tables mapping warnings:", rErr, smErr); 
+        }
+
+        const tbody = document.getElementById('studentListRows');
+        tbody.innerHTML = '';
+        let finalRows = [];
+
+        // 3. Process records relative to base student availability definitions
+        baseStudents.forEach(st => {
+            const matchOffline = (offlineResults || []).filter(x => x.student_id === st.id);
+            const matchOnline = (onlineResults || []).filter(x => x.student_id === st.id);
+
+            // Consolidate rows to ensure absolute deduplication via grouping logic emulation
+            const offlineMarks = matchOffline.length > 0 ? Math.max(...matchOffline.map(x => x.marks_obtained ?? 0)) : 0;
+            const onlineMarks = matchOnline.length > 0 ? Math.max(...matchOnline.map(x => x.marks_obtained ?? 0)) : null;
+
+            // Extract baseline attributes safely out of array structures
+            const marksSet = matchOffline[0]?.marks_set || matchOnline[0]?.marks_set || 100;
+            const resultId = matchOffline[0]?.id || matchOnline[0]?.result_id || st.id;
+
+            finalRows.push({
+                student: st,
+                result_id: resultId,
+                marks_set: marksSet,
+                offline_marks: offlineMarks,
+                online_marks: onlineMarks
+            });
+        });
+
+        // Sort by Roll Number numerically matching configuration requirements
+        finalRows.sort((a, b) => parseInt(a.student.roll_no || 0) - parseInt(b.student.roll_no || 0));
+
+        // 4. Dom Generation Loop
+        finalRows.forEach(row => {
+            const tr = document.createElement('tr');
+            const currentOnlineValue = (row.online_marks !== null && !isNaN(row.online_marks)) ? row.online_marks : "";
+
+            tr.innerHTML = `
+                <td>${row.student.registration_no || '-'}</td>
+                <td>${row.student.roll_no || '-'}</td>
+                <td><strong>${row.student.student_name}</strong></td>
+                <td>${row.student.father_name || '-'}</td>
+                <td class="offline-text">${row.offline_marks} / ${row.marks_set}</td>
+                <td>
+                    <input type="number" 
+                           class="input-score" 
+                           data-result-id="${row.result_id}"
+                           data-student-id="${row.student.id}"
+                           min="0" 
+                           max="${row.marks_set}" 
+                           value="${currentOnlineValue}"
+                           placeholder="-">
+                    <span> / ${row.marks_set}</span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('marksTable').style.display = 'table';
+        if(document.getElementById('actionFooter')) {
+            document.getElementById('actionFooter').style.display = 'flex';
         }
     }
 
-    // 4. CONSOLIDATE ROW MAPS: Group entries by student_id to prevent duplicate rows
-    const uniqueStudentsMap = {};
-
-    baseResults.forEach(r => {
-        // Find if there is a cloud modification record matching this result_id template
-        const matchingCloud = customSavedMarks 
-            ? customSavedMarks.find(sm => sm.result_id === r.id && sm.subject_code === r.subject_code)
-            : null;
-
-        // Group by student_id to ensure only one line displays per person
-        uniqueStudentsMap[r.student_id] = {
-            result_id: r.id,
-            exam_id: r.exam_id,
-            student_id: r.student_id,
-            marks_set: r.marks_set,
-            offline_marks: r.marks_obtained || 0, // Pulls the base offline score
-            online_marks: matchingCloud ? matchingCloud.marks_obtained : null // Pulls cloud score if present
-        };
-    });
-
-    // 5. Render to UI table body elements
-    const tbody = document.getElementById('studentListRows');
-    tbody.innerHTML = '';
-    
-    Object.values(uniqueStudentsMap).forEach(row => {
-        const st = studentsMap[row.student_id] || {};
-        const tr = document.createElement('tr');
+    async function saveCloudRows() {
+        const inputs = document.querySelectorAll('.input-score');
+        const examSel = document.getElementById('selectExam') || document.getElementById('selectExamination');
+        const examId = parseInt(examSel.value);
+        const className = document.getElementById('selectClass').value;
+        const subjectCode = document.getElementById('selectSubject').value;
+        const msg = document.getElementById('statusMessage');
         
-        tr.innerHTML = `
-        <td>${st.registration_no || '-'}</td>
-        <td>${st.roll_no || '-'}</td>
-        <td><strong>${st.student_name || 'ID:'+row.student_id}</strong></td>
-        <td>${st.father_name || '-'}</td>
-        
-        <!-- COLUMN 1: Offline Scores Display -->
-        <td>
-            <span class="badge-offline" style="color: #bbb;">${row.offline_marks} / ${row.marks_set}</span>
-        </td>
-        
-        <!-- COLUMN 2: Online Scores Action Entry (Can be modified and saved) -->
-        <td>
-            <input type="number" 
-                   class="input-score" 
-                   data-id="${row.result_id}" 
-                   data-result-id="${row.result_id}" 
-                   data-exam-id="${row.exam_id || ''}"
-                   data-student-id="${row.student_id || ''}"
-                   data-class-name="${className}"
-                   data-subject-code="${subjectCode}" 
-                   min="0" 
-                   max="${row.marks_set}" 
-                   value="${row.online_marks !== null ? row.online_marks : row.offline_marks}">
-            <span> / ${row.marks_set}</span>
-        </td>
-        `;
-        tbody.appendChild(tr);
-    });
+        if(msg) msg.innerText = '⏳ Syncing changes...';
+        let hasError = false;
 
-    document.getElementById('marksTable').style.display = 'table';
-    document.getElementById('actionFooter').style.display = 'flex';
-}
-
-async function saveCloudRows() {
-    const inputs = document.querySelectorAll('.input-score');
-    const msg = document.getElementById('statusMessage');
-    msg.innerText = '⏳ Syncing...';
-    msg.className = 'status-msg';
-
-    let hasError = false;
-    let errorMessage = '';
-
-    // 1. Prepare payload for student_subject_marks table with all structural fields
-    const updatePayload = Array.from(inputs).map(input => ({
-        result_id: parseInt(input.dataset.resultId),
-        subject_code: input.dataset.subjectCode,
-        exam_id: input.dataset.examId ? parseInt(input.dataset.examId) : null,
-        student_id: input.dataset.studentId ? parseInt(input.dataset.studentId) : null,
-        class: input.dataset.className || null,
-        marks_obtained: parseFloat(input.value) || 0
-    }));
-
-    try {
-        // 2. Save to student_subject_marks table
-        const { error: upsertError } = await supabaseClient
-            .from('student_subject_marks')
-            .upsert(updatePayload, { onConflict: 'result_id,subject_code' });
-
-        if (upsertError) {
-            hasError = true;
-            errorMessage = 'student_subject_marks error: ' + upsertError.message;
-        }
-
-        // 3. Simultaneously loop and update the main result table
-        for (const input of inputs) {
-            const id = input.getAttribute('data-id');
-            const marks = parseFloat(input.value) || 0;
+        for (let input of inputs) {
+            if (input.value === "") continue; 
             
-            const { error: updateError } = await supabaseClient
-                .from('result')
-                .update({ marks_obtained: marks })
-                .eq('id', id);
+            const resId = parseInt(input.dataset.resultId);
+            const studId = parseInt(input.dataset.studentId);
+            const maxMarks = parseFloat(input.getAttribute('max')) || 100;
+            const newMarks = parseFloat(input.value) || 0;
 
-            if (updateError) {
-                console.error('Error updating result row ID ' + id + ':', updateError);
-                hasError = true;
-                errorMessage = 'result table error: ' + updateError.message;
+            const { error } = await supabaseClient
+                .from('student_subject_marks')
+                .upsert({
+                    result_id: resId,
+                    subject_code: subjectCode,
+                    exam_id: examId,
+                    student_id: studId,
+                    class: className,
+                    marks_set: maxMarks,
+                    marks_obtained: newMarks
+                });
+
+            if (error) { 
+                hasError = true; 
+                console.error("Upsert tracking error details:", error); 
             }
         }
 
-        // 4. Update the UI feedback message based on the status
-        if (hasError) {
-            msg.className = 'status-msg text-error';
-            msg.innerText = '❌ ' + errorMessage;
-        } else {
-            msg.className = 'status-msg text-success';
-            msg.innerText = '✅ Saved & Synced ' + inputs.length + ' records successfully!';
+        if(msg) {
+            if (hasError) { 
+                msg.className = 'status-msg text-error'; 
+                msg.innerText = '❌ Errors encountered while processing records.'; 
+            } else { 
+                msg.className = 'status-msg text-success'; 
+                msg.innerText = '✅ Saved securely!'; 
+            }
         }
-
-    } catch (err) {
-        msg.className = 'status-msg text-error';
-        msg.innerText = '❌ System Exception: ' + err.message;
     }
-}
-
 </script>
+
+
 </body>
 </html>

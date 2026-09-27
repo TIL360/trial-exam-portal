@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Student Result Portal</title>
+    <style>
+        :root {
+            --primary: #2e08b6;
+            --primary-hover: #1e0580;
+            --bg: #f4f6f9;
+            --school-red: #b01e1e;
+            --border: #ddd;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .search-container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .search-container h2 {
+            margin-top: 0;
+            color: var(--primary);
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #555;
+        }
+        .form-control {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+        .btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+        .error-msg {
+            color: var(--school-red);
+            font-weight: bold;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        /* Report Sheet Styling */
+        .report-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 40px auto;
+            background: white;
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: none;
+        }
+        .school-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .school-header h1 {
+            margin: 0;
+            color: var(--school-red);
+            font-size: 28px;
+            text-transform: uppercase;
+        }
+        .student-id-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        .info-col {
+            flex: 1;
+        }
+        .info-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+        .info-field {
+            border-bottom: 1px solid #000;
+            padding: 6px 2px;
+            font-size: 14px;
+        }
+        .exam-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background: #f2f2f2;
+        }
+        .subject-col {
+            text-align: left;
+            padding-left: 15px;
+        }
+        .summary-box {
+            margin-top: 25px;
+            display: flex;
+            border: 2px solid #333;
+            padding: 15px;
+        }
+        .summary-item {
+            text-align: center;
+            flex: 1;
+        }
+        .summary-item + .summary-item {
+            border-left: 1px solid #ccc;
+        }
+        .summary-value {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .remarks-box {
+            border: 2px dashed #333;
+            padding: 15px;
+            margin-top: 25px;
+            font-style: italic;
+            min-height: 60px;
+        }
+        .print-btn-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            display: none;
+            justify-content: flex-end;
+        }
+        .btn-print {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        @media print {
+            .search-container, .print-btn-container { display: none !important; }
+            body { background: none; padding: 0; }
+            .report-sheet { margin: 0; border: none; box-shadow: none; display: block !important; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Portal Lookup Form -->
+    <div class="search-container">
+        <h2>📊 Student Result Portal</h2>
+        <div class="form-group">
+            <label for="regNo">Registration Number</label>
+            <input type="text" id="regNo" class="form-control" placeholder="Enter Registration Number (e.g. 1)">
+        </div>
+        <div class="form-group">
+            <label for="selectExam">Select Examination</label>
+            <select id="selectExam" class="form-control">
+                <option value="">-- Choose Examination --</option>
+            </select>
+        </div>
+        <button type="button" id="btnSearch" class="btn">View Progress Report</button>
+        <div id="errorMsg" class="error-msg"></div>
+    </div>
+
+    <!-- Print Option -->
+    <div class="print-btn-container" id="printContainer">
+        <button class="btn-print" onclick="window.print()">🖨️ Print Report Card</button>
+    </div>
+
+    <!-- Dynamic Report Document Structure -->
+    <div class="report-sheet" id="reportCard">
+        <div class="school-header">
+            <h1 id="lblSchoolName">TECHINFO ACADEMY</h1>
+            <p>Online Performance Assessment Dashboard</p>
+        </div>
+        
+        <div class="student-id-section">
+            <div class="info-col">
+                <div class="info-row">
+                    <div class="info-field">Name: <strong id="lblStudentName">-</strong></div>
+                    <div class="info-field">Roll No: <strong id="lblRollNo">-</strong></div>
+                    <div class="info-field">Reg No: <strong id="lblRegNo">-</strong></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-field">Father's Name: <strong id="lblFatherName">-</strong></div>
+                    <div class="info-field">Class: <strong id="lblClass">-</strong></div>
+                    <div class="info-field">School Code: <strong>TECHINFO_2026</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="exam-title" id="lblExamName">Progress Report</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th class="subject-col">Subject</th>
+                    <th>Total Marks</th>
+                    <th>Marks Obtained</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                </tr>
+            </thead>
+            <tbody id="reportRows">
+                <!-- Dynamically injected row items -->
+            </tbody>
+            <tfoot>
+                <tr style="font-weight:bold; background:#f2f2f2;">
+                    <td class="subject-col">TOTAL</td>
+                    <td id="lblTotalMax">-</td>
+                    <td id="lblTotalObt">-</td>
+                    <td id="lblTotalPercent">-</td>
+                    <td id="lblTotalGrade">-</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="summary-box">
+            <div class="summary-item">
+                <div>RESULT STATUS</div>
+                <div class="summary-value" id="lblStatus">-</div>
+            </div>
+            <div class="summary-item">
+                <div>OVERALL PERCENTAGE</div>
+                <div class="summary-value" id="lblSummaryPercent">-</div>
+            </div>
+            <div class="summary-item">
+                <div>FINAL GRADE</div>
+                <div class="summary-value" id="lblSummaryGrade">-</div>
+            </div>
+        </div>
+
+        <div class="remarks-box">
+            <strong>Teacher Remarks:</strong>
+            <div id="lblRemarks" style="margin-top: 5px;">No remarks entered.</div>
+        </div>
+    </div>
+<script>
+    const supabaseUrl = 'https://vxdqfngvmrrupfooywwk.supabase.co'; 
+    const supabaseKey = 'sb_publishable_dvggOmxQl7wmhpIrkzbrLw_9Zp-Dm57';
+    
+    // const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const SCHOOL_CODE = 'TECHINFO_2026';
+
+    // Direct Database Fetcher Engine (Completely replaces external CDN script requirements)
+    async function queryDatabase(table, queryParameters = "") {
+        const url = `${supabaseUrl}/rest/v1/${table}?${queryParameters}`;
+        const headers = {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+        };
+        
+        const response = await fetch(url, { method: 'GET', headers: headers });
+        if (!response.ok) {
+            throw new Error(`Database fetch operation rejected: ${response.statusText}`);
+        }
+        return await response.json();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadExams();
+        document.getElementById('btnSearch').addEventListener('click', fetchStudentResult);
+    });
+
+    async function loadExams() {
+        try {
+            // Fetch exams via native HTTP GET REST API
+            const exams = await queryDatabase('exams', `school_code=eq.${SCHOOL_CODE}`);
+
+            if (exams && exams.length > 0) {
+                const selectExam = document.getElementById('selectExam');
+                exams.forEach(e => {
+                    selectExam.add(new Option(e.exam_name, e.id));
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load examinations dropdown:", err);
+        }
+    }
+
+    function getGrade(score, max) {
+        if (!max || max === 0) return '-';
+        const p = (score / max) * 100;
+        if (p >= 90) return 'A+';
+        if (p >= 80) return 'A';
+        if (p >= 70) return 'B';
+        if (p >= 60) return 'C';
+        if (p >= 40) return 'D';
+        return 'F';
+    }
+         async function fetchStudentResult() {
+        const regNo = document.getElementById('regNo').value.trim();
+        const examId = document.getElementById('selectExam').value;
+        const errorMsg = document.getElementById('errorMsg');
+        const reportCard = document.getElementById('reportCard');
+        const printContainer = document.getElementById('printContainer');
+
+        // Reset display states
+        errorMsg.style.display = "none";
+        reportCard.style.display = "none";
+        printContainer.style.display = "none";
+
+        if (!regNo || !examId) {
+            errorMsg.innerText = "⚠️ Please provide both the Registration Number and Examination.";
+            errorMsg.style.display = "block";
+            return;
+        }
+
+        try {
+            // ==========================================
+            // STEP 1: INITIAL FETCH - GET STUDENT PROFILE
+            // ==========================================
+            const students = await queryDatabase('students', `school_code=eq.${SCHOOL_CODE}&registration_no=eq.${regNo}`);
+            
+            if (!students || students.length === 0) {
+                errorMsg.innerText = "❌ Student Profile record matching this registration code not found.";
+                errorMsg.style.display = "block";
+                return;
+            }
+            
+            // THE CRITICAL FIX: Extract the first student item directly from the database array list index
+            const studentData = students[0]; 
+
+            if (!studentData || !studentData.id) {
+                errorMsg.innerText = "❌ Critical Error: Student internal reference ID is missing.";
+                errorMsg.style.display = "block";
+                return;
+            }
+
+            // ==========================================
+            // STEP 2: IMMEDIATELY DISPLAY PROFILE DETAILS
+            // ==========================================
+            document.getElementById('lblStudentName').innerText = studentData.student_name || '-';
+            document.getElementById('lblRollNo').innerText = studentData.roll_no || '___';
+            document.getElementById('lblRegNo').innerText = studentData.registration_no || '-';
+            document.getElementById('lblFatherName').innerText = studentData.father_name || '___';
+            document.getElementById('lblExamName').innerText = document.getElementById('selectExam').options[document.getElementById('selectExam').selectedIndex].text;
+            
+            // Show the report sheet outline right away to confirm student lookup
+            reportCard.style.display = "block";
+
+            // ==========================================
+            // STEP 3: SUBSEQUENT FETCH - MARKS & SUBJECTS
+            // ==========================================
+            const subjects = await queryDatabase('academy_subjects');
+            
+            // Queries now target the real validated numerical internal student ID
+            const offlineMarks = await queryDatabase('result', `school_code=eq.${SCHOOL_CODE}&exam_id=eq.${examId}&student_id=eq.${studentData.id}`);
+            const onlineMarks = await queryDatabase('student_subject_marks', `exam_id=eq.${examId}&student_id=eq.${studentData.id}`);
+
+            const tbody = document.getElementById('reportRows');
+            tbody.innerHTML = '';
+
+            let totalMax = 0;
+            let totalObt = 0;
+            let failedSubjects = 0;
+            let targetClass = '___';
+            let studentRemarks = 'No remarks entered.';
+            let hasAnyMarks = false;
+
+            // Map database records to rows
+            if (subjects && subjects.length > 0) {
+                subjects.forEach(sub => {
+                    const offMatch = (offlineMarks || []).find(x => x.subject_code === sub.subject_code);
+                    const onMatch = (onlineMarks || []).find(x => x.subject_code === sub.subject_code);
+
+                    if (offMatch || onMatch) {
+                        hasAnyMarks = true;
+                        const maxMarks = offMatch?.marks_set || onMatch?.marks_set || 100;
+                        const obtMarks = Math.max(offMatch?.marks_obtained || 0, onMatch?.marks_obtained || 0);
+                        
+                        if(offMatch && offMatch.class) targetClass = offMatch.class;
+                        if(onMatch && onMatch.class) targetClass = onMatch.class;
+                        if(offMatch?.remarks) studentRemarks = offMatch.remarks;
+
+                        totalMax += maxMarks;
+                        totalObt += obtMarks;
+
+                        const itemPerc = maxMarks > 0 ? Math.round((obtMarks / maxMarks) * 100) : 0;
+                        if (itemPerc < 40) failedSubjects++;
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="subject-col">${sub.subject_display_name}</td>
+                            <td>${maxMarks}</td>
+                            <td>${obtMarks}</td>
+                            <td>${itemPerc}%</td>
+                            <td>${getGrade(obtMarks, maxMarks)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                });
+            }
+
+            // Set the class text field dynamically from the results row
+            document.getElementById('lblClass').innerText = targetClass;
+
+            // If no evaluation records are uploaded for this exam, handle it gracefully inside the view
+            if (!hasAnyMarks) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; color: #888; font-weight: bold;">📭 No scores uploaded yet for this specific examination.</td></tr>`;
+                document.getElementById('lblTotalMax').innerText = "-";
+                document.getElementById('lblTotalObt').innerText = "-";
+                document.getElementById('lblTotalPercent').innerText = "-";
+                document.getElementById('lblTotalGrade').innerText = "-";
+                document.getElementById('lblStatus').innerText = "PENDING";
+                document.getElementById('lblStatus').style.color = "#aaa";
+                document.getElementById('lblSummaryPercent').innerText = "-";
+                document.getElementById('lblSummaryGrade').innerText = "-";
+                document.getElementById('lblRemarks').innerText = "Awaiting examination evaluation logs.";
+                return;
+            }
+
+            // ==========================================
+            // STEP 4: CALCULATE FINAL SUMMARY METRICS
+            // ==========================================
+            const overallPercent = Math.round((totalObt / totalMax) * 100);
+            const finalGrade = getGrade(totalObt, totalMax);
+            const statusText = (overallPercent >= 33 && failedSubjects <= 1) ? 'PROMOTED' : 'DETAINED';
+
+            document.getElementById('lblTotalMax').innerText = totalMax;
+            document.getElementById('lblTotalObt').innerText = totalObt;
+            document.getElementById('lblTotalPercent').innerText = overallPercent + "%";
+            document.getElementById('lblTotalGrade').innerText = finalGrade;
+
+            document.getElementById('lblStatus').innerText = statusText;
+            document.getElementById('lblStatus').style.color = statusText === 'PROMOTED' ? '#27ae60' : '#c0392b';
+            document.getElementById('lblSummaryPercent').innerText = overallPercent + "%";
+            document.getElementById('lblSummaryGrade').innerText = finalGrade;
+            document.getElementById('lblRemarks').innerText = studentRemarks;
+
+            // Display print actions if marks are verified
+            printContainer.style.display = "flex";
+
+        } catch (err) {
+            console.error(err);
+            errorMsg.innerText = "❌ An unexpected network error occurred while querying records.";
+            errorMsg.style.display = "block";
+        }
+    }
+</script>
+</body>
+</html>
